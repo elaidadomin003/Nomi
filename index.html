@@ -9,12 +9,18 @@
   <title>Nomi - Finanzas Inteligentes</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     body { -webkit-tap-highlight-color: transparent; }
+    @keyframes popIn {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop { animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
   </style>
 </head>
 <body class="bg-[#f8fafc] font-sans text-gray-800 antialiased h-screen overflow-hidden flex flex-col md:flex-row">
@@ -32,6 +38,71 @@
 
   <!-- Toast de notificación -->
   <div id="toast" class="fixed top-5 right-5 z-50 hidden bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg transition-all"></div>
+
+  <!-- MODAL DE CELEBRACIÓN DE AHORRO -->
+  <div id="celebration-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-8 text-center shadow-2xl animate-pop">
+      <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner">
+        <i class="fas fa-trophy text-4xl"></i>
+      </div>
+      <h2 id="cel-title" class="text-2xl font-extrabold text-gray-900 mb-2">¡Disciplina imparable!</h2>
+      <p id="cel-subtitle" class="text-sm text-gray-500 mb-6">Cada peso que proteges hoy construye tu libertad de mañana.</p>
+      <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-6">
+        <p class="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Sumaste a tu ahorro</p>
+        <p id="cel-amount" class="text-3xl font-extrabold text-emerald-600 mt-1">+$7,000</p>
+        <p id="cel-total" class="text-xs text-emerald-700/80 mt-2">Total protegido: $0</p>
+      </div>
+      <button id="btn-close-celebration" class="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl hover:bg-emerald-700 transition-colors shadow-md">
+        ¡Seguir así!
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIGURAR ACCIONES RÁPIDAS -->
+  <div id="quick-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-pop">
+      <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+        <h3 class="font-bold text-lg text-gray-800">Personalizar Acciones Rápidas</h3>
+        <button id="btn-close-quick-modal" class="text-gray-400 hover:text-gray-700 p-1"><i class="fas fa-times text-lg"></i></button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-5 flex-1">
+        <!-- Formulario añadir/editar -->
+        <form id="quick-action-form" class="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-3">
+          <input type="hidden" id="qa-id">
+          <p id="qa-form-title" class="text-xs font-bold text-gray-500 uppercase">Nueva Acción Rápida</p>
+          <div class="grid grid-cols-2 gap-2">
+            <select id="qa-type" class="p-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium">
+              <option value="gasto">Salida (Gasto)</option>
+              <option value="ingreso">Entrada (Ingreso)</option>
+            </select>
+            <select id="qa-category" class="p-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium">
+              <option value="Ahorro">Ahorro</option>
+              <option value="Diezmo">Diezmo</option>
+              <option value="Sueldo">Sueldo</option>
+              <option value="Comida">Comida</option>
+              <option value="Servicios">Servicios</option>
+              <option value="Transporte">Transporte</option>
+              <option value="Personal">Personal</option>
+              <option value="Otros">Otros</option>
+            </select>
+          </div>
+          <input type="text" id="qa-label" required placeholder="Nombre (ej. Quincena 15, Café, Ahorro)" class="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm">
+          <input type="number" id="qa-amount" required min="1" step="any" placeholder="Monto ($)" class="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold">
+          <div class="flex gap-2">
+            <button type="submit" class="flex-1 bg-blue-600 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-blue-700 transition-colors">Guardar</button>
+            <button type="button" id="qa-cancel-edit" class="hidden px-4 bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl">Cancelar</button>
+          </div>
+        </form>
+
+        <!-- Lista de acciones actuales -->
+        <div>
+          <p class="text-xs font-bold text-gray-400 uppercase mb-2">Tus botones actuales</p>
+          <div id="qa-manage-list" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- APP PRINCIPAL -->
   <div id="main-app" class="hidden w-full h-full flex flex-col md:flex-row">
@@ -96,43 +167,18 @@
             </div>
           </div>
 
-          <!-- Pendientes de Quincena -->
+          <!-- Acciones Rápidas Modulares -->
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <h3 class="text-base font-bold text-gray-800 mb-4 flex items-center">
-              <i class="fas fa-clipboard-check text-blue-500 mr-2"></i> Acciones Rápidas de Quincena
-            </h3>
-            <div class="space-y-3">
-              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                <div class="flex items-center">
-                  <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mr-3">
-                    <i class="fas fa-piggy-bank"></i>
-                  </div>
-                  <div>
-                    <p class="font-semibold text-sm text-gray-800">Ahorro Quincenal</p>
-                    <p class="text-xs text-gray-500">Meta fija</p>
-                  </div>
-                </div>
-                <div class="flex items-center gap-3">
-                  <span class="font-bold text-sm text-gray-800">$7,000</span>
-                  <button id="quick-ahorro" class="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg hover:bg-black transition-colors">Registrar</button>
-                </div>
-              </div>
-
-              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                <div class="flex items-center">
-                  <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mr-3">
-                    <i class="fas fa-hand-holding-heart"></i>
-                  </div>
-                  <div>
-                    <p class="font-semibold text-sm text-gray-800">Diezmo (10%)</p>
-                    <p class="text-xs text-gray-500">Calculado del último ingreso</p>
-                  </div>
-                </div>
-                <div class="flex items-center gap-3">
-                  <span id="quick-diezmo-amount" class="font-bold text-sm text-gray-800">$3,458</span>
-                  <button id="quick-diezmo" class="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg hover:bg-black transition-colors">Registrar</button>
-                </div>
-              </div>
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-base font-bold text-gray-800 flex items-center">
+                <i class="fas fa-bolt text-amber-500 mr-2"></i> Acciones Rápidas
+              </h3>
+              <button id="btn-open-quick-modal" class="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">
+                <i class="fas fa-sliders-h mr-1"></i> Configurar
+              </button>
+            </div>
+            <div id="quick-actions-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- Se renderizan dinámicamente desde Firebase -->
             </div>
           </div>
 
@@ -151,20 +197,8 @@
         <section id="view-registro" class="view-section hidden space-y-6">
           <header>
             <h2 class="text-2xl font-bold text-gray-800">Nuevo Registro</h2>
-            <p class="text-sm text-gray-500">Agrega un ingreso o gasto al instante</p>
+            <p class="text-sm text-gray-500">Agrega un ingreso o gasto manual</p>
           </header>
-
-          <!-- Botones rápidos de quincena -->
-          <div class="grid grid-cols-2 gap-3">
-            <button type="button" id="fill-q15" class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-left hover:bg-blue-100 transition-colors">
-              <p class="text-xs text-blue-600 font-semibold">Ingreso Rápido</p>
-              <p class="text-sm font-bold text-blue-900">Quincena 15 ($34,580)</p>
-            </button>
-            <button type="button" id="fill-q30" class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-left hover:bg-blue-100 transition-colors">
-              <p class="text-xs text-blue-600 font-semibold">Ingreso Rápido</p>
-              <p class="text-sm font-bold text-blue-900">Quincena 30 ($27,663)</p>
-            </button>
-          </div>
 
           <form id="transaction-form" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
             <div class="grid grid-cols-2 gap-3">
@@ -311,10 +345,25 @@
     const db = getFirestore(app);
 
     let allTransactions = [];
-    let lastIncomeAmount = 34580;
+    let currentAhorroTotal = 0;
     let simIncome = 34580;
 
-    // Utilidad Toast
+    // Acciones rápidas iniciales por defecto
+    const DEFAULT_QUICK_ACTIONS = [
+      { id: "qa_ahorro", label: "Ahorro Quincenal", type: "gasto", category: "Ahorro", amount: 7000 },
+      { id: "qa_diezmo", label: "Diezmo (10%)", type: "gasto", category: "Diezmo", amount: 3458 },
+      { id: "qa_q15", label: "Quincena del 15", type: "ingreso", category: "Sueldo", amount: 34580 },
+      { id: "qa_q30", label: "Quincena del 30", type: "ingreso", category: "Sueldo", amount: 27663 }
+    ];
+    let quickActions = [...DEFAULT_QUICK_ACTIONS];
+
+    const CELEBRATION_MESSAGES = [
+      { title: "¡Disciplina imparable!", sub: "Cada peso que proteges hoy construye tu libertad de mañana." },
+      { title: "¡Excelente hábito!", sub: "Tu yo del futuro te va a agradecer esta decisión." },
+      { title: "¡Ahorro blindado!", sub: "La constancia siempre le gana a la suerte. ¡Sigue así!" },
+      { title: "¡Meta en marcha!", sub: "Un paso más cerca de tus objetivos financieros." }
+    ];
+
     function showToast(msg) {
       const t = document.getElementById('toast');
       t.textContent = msg;
@@ -322,11 +371,27 @@
       setTimeout(() => t.classList.add('hidden'), 2500);
     }
 
-    // Navegación entre pestañas
+    function triggerCelebration(addedAmount) {
+      const msg = CELEBRATION_MESSAGES[Math.floor(Math.random() * CELEBRATION_MESSAGES.length)];
+      document.getElementById('cel-title').textContent = msg.title;
+      document.getElementById('cel-subtitle').textContent = msg.sub;
+      document.getElementById('cel-amount').textContent = `+$${Number(addedAmount).toLocaleString()}`;
+      document.getElementById('cel-total').textContent = `Total protegido: $${(currentAhorroTotal + Number(addedAmount)).toLocaleString()}`;
+      document.getElementById('celebration-modal').classList.remove('hidden');
+
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'] });
+      }
+    }
+
+    document.getElementById('btn-close-celebration').addEventListener('click', () => {
+      document.getElementById('celebration-modal').classList.add('hidden');
+    });
+
+    // Navegación
     function switchTab(tabName) {
       document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
       document.getElementById(`view-${tabName}`).classList.remove('hidden');
-
       document.querySelectorAll('.nav-btn').forEach(btn => {
         if (btn.dataset.tab === tabName) {
           btn.classList.add('text-blue-600', 'md:bg-blue-50');
@@ -337,15 +402,10 @@
         }
       });
     }
-
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-    });
-
-    // Fecha de hoy por defecto
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
     document.getElementById('input-date').valueAsDate = new Date();
 
-    // Autenticación y carga de datos
+    // Auth
     signInAnonymously(auth).catch((error) => {
       document.getElementById('loading-screen').innerHTML = `
         <div class="text-center p-8 bg-white rounded-2xl shadow-xl max-w-sm mx-auto">
@@ -360,41 +420,177 @@
         document.getElementById('loading-screen').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
         listenTransactions();
+        listenQuickActions();
         loadNotes();
         updateSimulator();
       }
     });
 
-    // Escuchar movimientos en tiempo real
+    // --- ACCIONES RÁPIDAS MODULARES ---
+    function listenQuickActions() {
+      onSnapshot(doc(db, "nomi_settings", "quick_actions"), async (snap) => {
+        if (snap.exists() && Array.isArray(snap.data().items)) {
+          quickActions = snap.data().items;
+        } else {
+          await setDoc(doc(db, "nomi_settings", "quick_actions"), { items: DEFAULT_QUICK_ACTIONS });
+          quickActions = [...DEFAULT_QUICK_ACTIONS];
+        }
+        renderQuickActions();
+        renderQuickActionsManager();
+      });
+    }
+
+    async function saveQuickActionsToCloud() {
+      await setDoc(doc(db, "nomi_settings", "quick_actions"), { items: quickActions });
+    }
+
+    function renderQuickActions() {
+      const grid = document.getElementById('quick-actions-grid');
+      if (quickActions.length === 0) {
+        grid.innerHTML = `<p class="text-xs text-gray-400 col-span-2 text-center py-4">No tienes acciones rápidas. Toca "Configurar" para crear una.</p>`;
+        return;
+      }
+
+      grid.innerHTML = quickActions.map(qa => {
+        const isIngreso = qa.type === 'ingreso';
+        const icon = qa.category === 'Ahorro' ? 'fa-piggy-bank text-emerald-600 bg-emerald-100'
+                   : qa.category === 'Diezmo' ? 'fa-hand-holding-heart text-purple-600 bg-purple-100'
+                   : isIngreso ? 'fa-arrow-up text-blue-600 bg-blue-100'
+                   : 'fa-arrow-down text-red-500 bg-red-100';
+        return `
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+            <div class="flex items-center min-w-0">
+              <div class="w-9 h-9 rounded-full ${icon} flex items-center justify-center mr-3 flex-shrink-0">
+                <i class="fas ${icon.split(' ')[0]} text-sm"></i>
+              </div>
+              <div class="truncate">
+                <p class="font-semibold text-sm text-gray-800 truncate">${qa.label}</p>
+                <p class="text-[11px] text-gray-500">${qa.category} • ${isIngreso ? '+' : '-'}$${Number(qa.amount).toLocaleString()}</p>
+              </div>
+            </div>
+            <button data-run-qa="${qa.id}" class="run-qa-btn ml-2 bg-gray-900 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-black transition-colors flex-shrink-0">
+              Registrar
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.run-qa-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const qa = quickActions.find(x => x.id === btn.dataset.runQa);
+          if (!qa) return;
+          const today = new Date().toISOString().split('T')[0];
+          await addDoc(collection(db, "nomi_transactions"), {
+            type: qa.type, amount: Number(qa.amount), concept: qa.label, category: qa.category, date: today, createdAt: Date.now()
+          });
+          if (qa.category === 'Ahorro') {
+            triggerCelebration(qa.amount);
+          } else {
+            showToast(`${qa.label} registrado`);
+          }
+        });
+      });
+    }
+
+    function renderQuickActionsManager() {
+      const list = document.getElementById('qa-manage-list');
+      list.innerHTML = quickActions.map(qa => `
+        <div class="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl">
+          <div>
+            <p class="text-sm font-semibold text-gray-800">${qa.label}</p>
+            <p class="text-xs text-gray-400">${qa.type === 'ingreso' ? 'Entrada' : 'Salida'} • ${qa.category} • $${Number(qa.amount).toLocaleString()}</p>
+          </div>
+          <div class="flex gap-2">
+            <button data-edit-qa="${qa.id}" class="edit-qa-btn text-blue-600 hover:bg-blue-50 p-2 rounded-lg text-xs"><i class="fas fa-pen"></i></button>
+            <button data-del-qa="${qa.id}" class="del-qa-btn text-red-500 hover:bg-red-50 p-2 rounded-lg text-xs"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      `).join('');
+
+      document.querySelectorAll('.edit-qa-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const qa = quickActions.find(x => x.id === btn.dataset.editQa);
+          if (!qa) return;
+          document.getElementById('qa-id').value = qa.id;
+          document.getElementById('qa-type').value = qa.type;
+          document.getElementById('qa-category').value = qa.category;
+          document.getElementById('qa-label').value = qa.label;
+          document.getElementById('qa-amount').value = qa.amount;
+          document.getElementById('qa-form-title').textContent = 'Editando Acción Rápida';
+          document.getElementById('qa-cancel-edit').classList.remove('hidden');
+        });
+      });
+
+      document.querySelectorAll('.del-qa-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          quickActions = quickActions.filter(x => x.id !== btn.dataset.delQa);
+          await saveQuickActionsToCloud();
+          showToast('Acción eliminada');
+        });
+      });
+    }
+
+    function resetQAForm() {
+      document.getElementById('quick-action-form').reset();
+      document.getElementById('qa-id').value = '';
+      document.getElementById('qa-form-title').textContent = 'Nueva Acción Rápida';
+      document.getElementById('qa-cancel-edit').classList.add('hidden');
+    }
+
+    document.getElementById('btn-open-quick-modal').addEventListener('click', () => {
+      resetQAForm();
+      document.getElementById('quick-modal').classList.remove('hidden');
+    });
+    document.getElementById('btn-close-quick-modal').addEventListener('click', () => {
+      document.getElementById('quick-modal').classList.add('hidden');
+    });
+    document.getElementById('qa-cancel-edit').addEventListener('click', resetQAForm);
+
+    document.getElementById('quick-action-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('qa-id').value;
+      const item = {
+        id: id || 'qa_' + Date.now(),
+        type: document.getElementById('qa-type').value,
+        category: document.getElementById('qa-category').value,
+        label: document.getElementById('qa-label').value.trim(),
+        amount: parseFloat(document.getElementById('qa-amount').value)
+      };
+
+      if (id) {
+        quickActions = quickActions.map(x => x.id === id ? item : x);
+        showToast('Acción actualizada');
+      } else {
+        quickActions.push(item);
+        showToast('Acción añadida');
+      }
+      await saveQuickActionsToCloud();
+      resetQAForm();
+    });
+
+    // --- MOVIMIENTOS ---
     function listenTransactions() {
       const q = query(collection(db, "nomi_transactions"), orderBy("date", "desc"));
       onSnapshot(q, (snapshot) => {
         allTransactions = [];
         let principal = 0;
         let ahorro = 0;
-        let foundIncome = false;
 
         snapshot.forEach((docSnap) => {
           const data = { id: docSnap.id, ...docSnap.data() };
           allTransactions.push(data);
           const amt = Number(data.amount) || 0;
-
           if (data.type === 'ingreso') {
             principal += amt;
-            if (!foundIncome) {
-              lastIncomeAmount = amt;
-              foundIncome = true;
-            }
           } else {
             principal -= amt;
             if (data.category === 'Ahorro') ahorro += amt;
           }
         });
 
+        currentAhorroTotal = ahorro;
         document.getElementById('balance-principal').textContent = `$${principal.toLocaleString()}`;
         document.getElementById('balance-ahorro').textContent = `$${ahorro.toLocaleString()}`;
-        document.getElementById('quick-diezmo-amount').textContent = `$${Math.round(lastIncomeAmount * 0.10).toLocaleString()}`;
-
         renderTransactions();
       });
     }
@@ -402,7 +598,7 @@
     function renderTransactions() {
       const list = document.getElementById('transactions-list');
       if (allTransactions.length === 0) {
-        list.innerHTML = `<p class="p-6 text-center text-sm text-gray-400">Aún no hay movimientos. Ve a "Registro" para agregar el primero.</p>`;
+        list.innerHTML = `<p class="p-6 text-center text-sm text-gray-400">Aún no hay movimientos.</p>`;
         return;
       }
 
@@ -433,7 +629,6 @@
       });
     }
 
-    // Guardar nuevo movimiento
     document.getElementById('transaction-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const type = document.querySelector('input[name="type"]:checked').value;
@@ -445,41 +640,13 @@
       await addDoc(collection(db, "nomi_transactions"), { type, amount, concept, category, date, createdAt: Date.now() });
       e.target.reset();
       document.getElementById('input-date').valueAsDate = new Date();
-      showToast('Movimiento guardado');
       switchTab('dashboard');
-    });
 
-    // Botones rápidos de quincena
-    document.getElementById('fill-q15').addEventListener('click', () => {
-      document.querySelector('input[name="type"][value="ingreso"]').checked = true;
-      document.getElementById('input-amount').value = 34580;
-      document.getElementById('input-concept').value = 'Quincena del 15';
-      document.getElementById('input-category').value = 'Sueldo';
-    });
-
-    document.getElementById('fill-q30').addEventListener('click', () => {
-      document.querySelector('input[name="type"][value="ingreso"]').checked = true;
-      document.getElementById('input-amount').value = 27663;
-      document.getElementById('input-concept').value = 'Quincena del 30';
-      document.getElementById('input-category').value = 'Sueldo';
-    });
-
-    // Acciones rápidas en Dashboard
-    document.getElementById('quick-ahorro').addEventListener('click', async () => {
-      const today = new Date().toISOString().split('T')[0];
-      await addDoc(collection(db, "nomi_transactions"), {
-        type: 'gasto', amount: 7000, concept: 'Ahorro Quincenal', category: 'Ahorro', date: today, createdAt: Date.now()
-      });
-      showToast('Ahorro de $7,000 registrado');
-    });
-
-    document.getElementById('quick-diezmo').addEventListener('click', async () => {
-      const today = new Date().toISOString().split('T')[0];
-      const amt = Math.round(lastIncomeAmount * 0.10);
-      await addDoc(collection(db, "nomi_transactions"), {
-        type: 'gasto', amount: amt, concept: 'Diezmo (10%)', category: 'Diezmo', date: today, createdAt: Date.now()
-      });
-      showToast(`Diezmo de $${amt.toLocaleString()} registrado`);
+      if (category === 'Ahorro') {
+        triggerCelebration(amount);
+      } else {
+        showToast('Movimiento guardado');
+      }
     });
 
     // Exportar CSV
@@ -521,24 +688,19 @@
       document.getElementById('sim-q30').className = 'flex-1 py-2 px-3 rounded-xl bg-gray-100 text-gray-700 text-sm font-semibold';
       updateSimulator();
     });
-
     document.getElementById('sim-q30').addEventListener('click', (e) => {
       simIncome = 27663;
       e.target.className = 'flex-1 py-2 px-3 rounded-xl bg-blue-600 text-white text-sm font-semibold';
       document.getElementById('sim-q15').className = 'flex-1 py-2 px-3 rounded-xl bg-gray-100 text-gray-700 text-sm font-semibold';
       updateSimulator();
     });
-
-    ['range-fijos', 'range-comida', 'range-extras'].forEach(id => {
-      document.getElementById(id).addEventListener('input', updateSimulator);
-    });
+    ['range-fijos', 'range-comida', 'range-extras'].forEach(id => document.getElementById(id).addEventListener('input', updateSimulator));
 
     // Notas
     async function loadNotes() {
       const snap = await getDoc(doc(db, "nomi_notes", "main"));
       if (snap.exists()) document.getElementById('notes-area').value = snap.data().text || '';
     }
-
     document.getElementById('btn-save-notes').addEventListener('click', async () => {
       const text = document.getElementById('notes-area').value;
       await setDoc(doc(db, "nomi_notes", "main"), { text, updatedAt: Date.now() });
