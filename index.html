@@ -10,9 +10,10 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
-    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     body { -webkit-tap-highlight-color: transparent; }
@@ -58,6 +59,42 @@
     </div>
   </div>
 
+  <!-- MODAL AÑADIR PRODUCTO / CUENTA -->
+  <div id="product-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-pop">
+      <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+        <h3 class="font-bold text-lg text-gray-800">Mis Productos y Cuentas</h3>
+        <button id="btn-close-product-modal" class="text-gray-400 hover:text-gray-700 p-1"><i class="fas fa-times text-lg"></i></button>
+      </div>
+      <div class="p-5 overflow-y-auto space-y-5 flex-1">
+        <form id="product-form" class="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-3">
+          <p class="text-xs font-bold text-gray-500 uppercase">Añadir Nuevo Producto</p>
+          <input type="text" id="prod-name" required placeholder="Ej. Tarjeta Visa, Cuenta Dólares, Efectivo..." class="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm">
+          <div class="grid grid-cols-2 gap-2">
+            <select id="prod-type" class="p-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium">
+              <option value="credito">Tarjeta de Crédito</option>
+              <option value="debito">Cuenta / Débito</option>
+              <option value="ahorro">Cuenta de Ahorro</option>
+            </select>
+            <select id="prod-color" class="p-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium">
+              <option value="purple">Morado</option>
+              <option value="slate">Negro / Oscuro</option>
+              <option value="amber">Dorado</option>
+              <option value="blue">Azul</option>
+              <option value="emerald">Verde</option>
+            </select>
+          </div>
+          <button type="submit" class="w-full bg-blue-600 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-blue-700 transition-colors">Crear Producto</button>
+        </form>
+
+        <div>
+          <p class="text-xs font-bold text-gray-400 uppercase mb-2">Tus productos actuales</p>
+          <div id="prod-manage-list" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL CONFIGURAR ACCIONES RÁPIDAS -->
   <div id="quick-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
     <div class="bg-white rounded-3xl max-w-md w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-pop">
@@ -67,7 +104,6 @@
       </div>
 
       <div class="p-5 overflow-y-auto space-y-5 flex-1">
-        <!-- Formulario añadir/editar -->
         <form id="quick-action-form" class="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-3">
           <input type="hidden" id="qa-id">
           <p id="qa-form-title" class="text-xs font-bold text-gray-500 uppercase">Nueva Acción Rápida</p>
@@ -76,17 +112,18 @@
               <option value="gasto">Salida (Gasto)</option>
               <option value="ingreso">Entrada (Ingreso)</option>
             </select>
-            <select id="qa-category" class="p-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium">
-              <option value="Ahorro">Ahorro</option>
-              <option value="Diezmo">Diezmo</option>
-              <option value="Sueldo">Sueldo</option>
-              <option value="Comida">Comida</option>
-              <option value="Servicios">Servicios</option>
-              <option value="Transporte">Transporte</option>
-              <option value="Personal">Personal</option>
-              <option value="Otros">Otros</option>
-            </select>
+            <select id="qa-account" class="p-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium"></select>
           </div>
+          <select id="qa-category" class="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium">
+            <option value="Ahorro">Ahorro</option>
+            <option value="Diezmo">Diezmo</option>
+            <option value="Sueldo">Sueldo</option>
+            <option value="Comida">Comida</option>
+            <option value="Servicios">Servicios</option>
+            <option value="Transporte">Transporte</option>
+            <option value="Personal">Personal</option>
+            <option value="Otros">Otros</option>
+          </select>
           <input type="text" id="qa-label" required placeholder="Nombre (ej. Quincena 15, Café, Ahorro)" class="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm">
           <input type="number" id="qa-amount" required min="1" step="any" placeholder="Monto ($)" class="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold">
           <div class="flex gap-2">
@@ -95,7 +132,6 @@
           </div>
         </form>
 
-        <!-- Lista de acciones actuales -->
         <div>
           <p class="text-xs font-bold text-gray-400 uppercase mb-2">Tus botones actuales</p>
           <div id="qa-manage-list" class="space-y-2"></div>
@@ -145,26 +181,40 @@
 
         <!-- VISTA 1: DASHBOARD -->
         <section id="view-dashboard" class="view-section space-y-6">
-          <header class="flex justify-between items-center">
+          <header class="flex justify-between items-center flex-wrap gap-2">
             <div>
               <h2 class="text-2xl font-bold text-gray-800">Resumen</h2>
-              <p class="text-sm text-gray-500">Sincronizado en tiempo real</p>
+              <p class="text-sm text-gray-500">Tu estado financiero en tiempo real</p>
             </div>
-            <button id="btn-export" class="bg-emerald-600 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-emerald-700 transition-colors flex items-center shadow-sm">
-              <i class="fas fa-file-excel mr-2"></i> Exportar CSV
-            </button>
+            <div class="flex gap-2">
+              <button id="btn-open-product-modal" class="bg-white border border-gray-200 text-gray-700 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors flex items-center shadow-sm">
+                <i class="fas fa-credit-card mr-1.5 text-blue-600"></i> + Producto
+              </button>
+              <button id="btn-export" class="bg-emerald-600 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-emerald-700 transition-colors flex items-center shadow-sm">
+                <i class="fas fa-file-excel mr-1.5"></i> CSV
+              </button>
+            </div>
           </header>
 
-          <!-- Balances -->
-          <div class="grid grid-cols-2 gap-4">
-            <div class="bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl p-5 text-white shadow-lg">
-              <p class="text-blue-100 text-xs md:text-sm font-medium mb-1">Cuenta Principal</p>
-              <h3 id="balance-principal" class="text-2xl md:text-3xl font-bold">$0</h3>
+          <!-- ALERTA DE DEUDA CON TU PROPIO AHORRO -->
+          <div id="savings-debt-alert" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i class="fas fa-exclamation-triangle"></i>
+              </div>
+              <div>
+                <p class="font-bold text-amber-900 text-sm">¡Ey, te debes <span id="debt-amount-text">$0</span> de tu ahorro!</p>
+                <p class="text-xs text-amber-700 mt-0.5">Tomaste dinero de tu cuenta de ahorro. No olvides devolvértelo.</p>
+              </div>
             </div>
-            <div class="bg-gradient-to-br from-emerald-600 to-emerald-400 rounded-2xl p-5 text-white shadow-lg">
-              <p class="text-emerald-100 text-xs md:text-sm font-medium mb-1">Ahorro Protegido</p>
-              <h3 id="balance-ahorro" class="text-2xl md:text-3xl font-bold">$0</h3>
-            </div>
+            <button id="btn-repay-debt" class="bg-amber-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-amber-700 transition-colors flex-shrink-0">
+              Reponer ahora
+            </button>
+          </div>
+
+          <!-- Tarjetas de Productos / Cuentas -->
+          <div id="accounts-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Se renderizan dinámicamente -->
           </div>
 
           <!-- Acciones Rápidas Modulares -->
@@ -177,8 +227,22 @@
                 <i class="fas fa-sliders-h mr-1"></i> Configurar
               </button>
             </div>
-            <div id="quick-actions-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <!-- Se renderizan dinámicamente desde Firebase -->
+            <div id="quick-actions-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+          </div>
+
+          <!-- GRÁFICAS FINANCIERAS -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+              <h3 class="text-sm font-bold text-gray-800 mb-3">Ingresos vs. Gastos</h3>
+              <div class="h-52 relative">
+                <canvas id="chart-flow"></canvas>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+              <h3 class="text-sm font-bold text-gray-800 mb-3">Gastos por Categoría</h3>
+              <div class="h-52 relative flex items-center justify-center">
+                <canvas id="chart-categories"></canvas>
+              </div>
             </div>
           </div>
 
@@ -197,7 +261,7 @@
         <section id="view-registro" class="view-section hidden space-y-6">
           <header>
             <h2 class="text-2xl font-bold text-gray-800">Nuevo Registro</h2>
-            <p class="text-sm text-gray-500">Agrega un ingreso o gasto manual</p>
+            <p class="text-sm text-gray-500">Añade ingresos, gastos o saldos iniciales a cualquier cuenta</p>
           </header>
 
           <form id="transaction-form" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
@@ -205,15 +269,22 @@
               <label class="cursor-pointer">
                 <input type="radio" name="type" value="gasto" checked class="peer hidden">
                 <div class="text-center py-3 rounded-xl border border-gray-200 peer-checked:bg-red-50 peer-checked:border-red-500 peer-checked:text-red-600 font-semibold text-sm transition-all">
-                  <i class="fas fa-arrow-down mr-1"></i> Gasto
+                  <i class="fas fa-arrow-down mr-1"></i> Sacar / Gasto
                 </div>
               </label>
               <label class="cursor-pointer">
                 <input type="radio" name="type" value="ingreso" class="peer hidden">
                 <div class="text-center py-3 rounded-xl border border-gray-200 peer-checked:bg-emerald-50 peer-checked:border-emerald-500 peer-checked:text-emerald-600 font-semibold text-sm transition-all">
-                  <i class="fas fa-arrow-up mr-1"></i> Ingreso
+                  <i class="fas fa-arrow-up mr-1"></i> Añadir / Ingreso
                 </div>
               </label>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Cuenta / Producto</label>
+              <select id="input-account" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <!-- Se llena dinámicamente (Cuenta Principal por defecto) -->
+              </select>
             </div>
 
             <div>
@@ -223,7 +294,7 @@
 
             <div>
               <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Concepto</label>
-              <input type="text" id="input-concept" required placeholder="Ej. Supermercado, Gasolina, Quincena..." class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <input type="text" id="input-concept" required placeholder="Ej. Saldo inicial, Supermercado, Pago tarjeta..." class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -236,6 +307,7 @@
                   <option value="Ahorro">Ahorro</option>
                   <option value="Diezmo">Diezmo</option>
                   <option value="Sueldo">Sueldo</option>
+                  <option value="Saldo Inicial">Saldo Inicial</option>
                   <option value="Personal">Personal</option>
                   <option value="Otros">Otros</option>
                 </select>
@@ -346,14 +418,22 @@
 
     let allTransactions = [];
     let currentAhorroTotal = 0;
+    let savingsDebt = 0;
     let simIncome = 34580;
+    let flowChart = null;
+    let catChart = null;
 
-    // Acciones rápidas iniciales por defecto
+    const DEFAULT_ACCOUNTS = [
+      { id: "acc_principal", name: "Cuenta Principal", type: "debito", color: "blue", locked: true },
+      { id: "acc_ahorro", name: "Ahorro Protegido", type: "ahorro", color: "emerald", locked: true }
+    ];
+    let accounts = [...DEFAULT_ACCOUNTS];
+
     const DEFAULT_QUICK_ACTIONS = [
-      { id: "qa_ahorro", label: "Ahorro Quincenal", type: "gasto", category: "Ahorro", amount: 7000 },
-      { id: "qa_diezmo", label: "Diezmo (10%)", type: "gasto", category: "Diezmo", amount: 3458 },
-      { id: "qa_q15", label: "Quincena del 15", type: "ingreso", category: "Sueldo", amount: 34580 },
-      { id: "qa_q30", label: "Quincena del 30", type: "ingreso", category: "Sueldo", amount: 27663 }
+      { id: "qa_ahorro", label: "Ahorro Quincenal", type: "gasto", accountId: "acc_principal", category: "Ahorro", amount: 7000 },
+      { id: "qa_diezmo", label: "Diezmo (10%)", type: "gasto", accountId: "acc_principal", category: "Diezmo", amount: 3458 },
+      { id: "qa_q15", label: "Quincena del 15", type: "ingreso", accountId: "acc_principal", category: "Sueldo", amount: 34580 },
+      { id: "qa_q30", label: "Quincena del 30", type: "ingreso", accountId: "acc_principal", category: "Sueldo", amount: 27663 }
     ];
     let quickActions = [...DEFAULT_QUICK_ACTIONS];
 
@@ -363,6 +443,14 @@
       { title: "¡Ahorro blindado!", sub: "La constancia siempre le gana a la suerte. ¡Sigue así!" },
       { title: "¡Meta en marcha!", sub: "Un paso más cerca de tus objetivos financieros." }
     ];
+
+    const COLOR_GRADIENTS = {
+      blue: "from-blue-900 to-blue-700",
+      emerald: "from-emerald-600 to-emerald-400",
+      purple: "from-purple-800 to-purple-600",
+      slate: "from-gray-900 to-gray-700",
+      amber: "from-amber-600 to-amber-400"
+    };
 
     function showToast(msg) {
       const t = document.getElementById('toast');
@@ -419,6 +507,8 @@
       if (user) {
         document.getElementById('loading-screen').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
+        listenAccounts();
+        listenSavingsDebt();
         listenTransactions();
         listenQuickActions();
         loadNotes();
@@ -426,7 +516,142 @@
       }
     });
 
-    // --- ACCIONES RÁPIDAS MODULARES ---
+    // --- PRODUCTOS / CUENTAS ---
+    function listenAccounts() {
+      onSnapshot(doc(db, "nomi_settings", "accounts"), async (snap) => {
+        if (snap.exists() && Array.isArray(snap.data().items)) {
+          accounts = snap.data().items;
+        } else {
+          await setDoc(doc(db, "nomi_settings", "accounts"), { items: DEFAULT_ACCOUNTS });
+          accounts = [...DEFAULT_ACCOUNTS];
+        }
+        populateAccountSelects();
+        renderAccountsGrid();
+        renderProductsManager();
+      });
+    }
+
+    function populateAccountSelects() {
+      const options = accounts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+      const regSelect = document.getElementById('input-account');
+      const qaSelect = document.getElementById('qa-account');
+      regSelect.innerHTML = options;
+      regSelect.value = "acc_principal";
+      qaSelect.innerHTML = options;
+      qaSelect.value = "acc_principal";
+    }
+
+    function renderAccountsGrid() {
+      const balances = {};
+      accounts.forEach(a => balances[a.id] = 0);
+
+      allTransactions.forEach(t => {
+        const accId = t.accountId || 'acc_principal';
+        const amt = Number(t.amount) || 0;
+        const acc = accounts.find(a => a.id === accId);
+
+        if (acc && acc.type === 'credito') {
+          // En tarjeta de crédito: gasto sube deuda, ingreso (pago) baja deuda
+          balances[accId] = (balances[accId] || 0) + (t.type === 'gasto' ? amt : -amt);
+        } else {
+          balances[accId] = (balances[accId] || 0) + (t.type === 'ingreso' ? amt : -amt);
+          // Compatibilidad: si es gasto en Principal con categoría Ahorro, suma a Ahorro
+          if (accId === 'acc_principal' && t.type === 'gasto' && t.category === 'Ahorro') {
+            balances['acc_ahorro'] = (balances['acc_ahorro'] || 0) + amt;
+          }
+        }
+      });
+
+      currentAhorroTotal = balances['acc_ahorro'] || 0;
+
+      const grid = document.getElementById('accounts-grid');
+      grid.innerHTML = accounts.map(a => {
+        const grad = COLOR_GRADIENTS[a.color] || COLOR_GRADIENTS.blue;
+        const val = balances[a.id] || 0;
+        const subtitle = a.type === 'credito' ? 'Deuda actual' : a.type === 'ahorro' ? 'Ahorro protegido' : 'Disponible';
+        const icon = a.type === 'credito' ? 'fa-credit-card' : a.type === 'ahorro' ? 'fa-piggy-bank' : 'fa-wallet';
+        return `
+          <div class="bg-gradient-to-br ${grad} rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
+            <div class="absolute -right-2 -bottom-2 opacity-15"><i class="fas ${icon} text-6xl"></i></div>
+            <p class="text-white/80 text-xs font-medium mb-0.5">${a.name}</p>
+            <h3 class="text-2xl md:text-3xl font-bold">$${val.toLocaleString()}</h3>
+            <p class="text-[11px] text-white/70 mt-1 uppercase tracking-wider">${subtitle}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderProductsManager() {
+      const list = document.getElementById('prod-manage-list');
+      list.innerHTML = accounts.map(a => `
+        <div class="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl">
+          <div>
+            <p class="text-sm font-semibold text-gray-800">${a.name}</p>
+            <p class="text-xs text-gray-400 capitalize">${a.type}</p>
+          </div>
+          ${a.locked ? '<span class="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded-md">Base</span>' : `
+            <button data-del-prod="${a.id}" class="del-prod-btn text-red-500 hover:bg-red-50 p-2 rounded-lg text-xs"><i class="fas fa-trash"></i></button>
+          `}
+        </div>
+      `).join('');
+
+      document.querySelectorAll('.del-prod-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          accounts = accounts.filter(x => x.id !== btn.dataset.delProd);
+          await setDoc(doc(db, "nomi_settings", "accounts"), { items: accounts });
+          showToast('Producto eliminado');
+        });
+      });
+    }
+
+    document.getElementById('btn-open-product-modal').addEventListener('click', () => document.getElementById('product-modal').classList.remove('hidden'));
+    document.getElementById('btn-close-product-modal').addEventListener('click', () => document.getElementById('product-modal').classList.add('hidden'));
+
+    document.getElementById('product-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const newProd = {
+        id: 'acc_' + Date.now(),
+        name: document.getElementById('prod-name').value.trim(),
+        type: document.getElementById('prod-type').value,
+        color: document.getElementById('prod-color').value,
+        locked: false
+      };
+      accounts.push(newProd);
+      await setDoc(doc(db, "nomi_settings", "accounts"), { items: accounts });
+      e.target.reset();
+      showToast('Producto añadido');
+    });
+
+    // --- DEUDA CON TU PROPIO AHORRO ---
+    function listenSavingsDebt() {
+      onSnapshot(doc(db, "nomi_settings", "savings_debt"), (snap) => {
+        savingsDebt = snap.exists() ? (Number(snap.data().amount) || 0) : 0;
+        const alertEl = document.getElementById('savings-debt-alert');
+        if (savingsDebt > 0) {
+          document.getElementById('debt-amount-text').textContent = `$${savingsDebt.toLocaleString()}`;
+          alertEl.classList.remove('hidden');
+        } else {
+          alertEl.classList.add('hidden');
+        }
+      });
+    }
+
+    async function updateSavingsDebt(newAmount) {
+      const clean = Math.max(0, Number(newAmount) || 0);
+      await setDoc(doc(db, "nomi_settings", "savings_debt"), { amount: clean });
+    }
+
+    document.getElementById('btn-repay-debt').addEventListener('click', async () => {
+      const toRepay = savingsDebt;
+      const today = new Date().toISOString().split('T')[0];
+      await addDoc(collection(db, "nomi_transactions"), {
+        type: 'ingreso', accountId: 'acc_ahorro', amount: toRepay, concept: 'Reposición de Ahorro', category: 'Ahorro', date: today, createdAt: Date.now()
+      });
+      await updateSavingsDebt(0);
+      triggerCelebration(toRepay);
+    });
+
+    // --- ACCIONES RÁPIDAS ---
     function listenQuickActions() {
       onSnapshot(doc(db, "nomi_settings", "quick_actions"), async (snap) => {
         if (snap.exists() && Array.isArray(snap.data().items)) {
@@ -447,7 +672,7 @@
     function renderQuickActions() {
       const grid = document.getElementById('quick-actions-grid');
       if (quickActions.length === 0) {
-        grid.innerHTML = `<p class="text-xs text-gray-400 col-span-2 text-center py-4">No tienes acciones rápidas. Toca "Configurar" para crear una.</p>`;
+        grid.innerHTML = `<p class="text-xs text-gray-400 col-span-2 text-center py-4">No tienes acciones rápidas. Toca "Configurar".</p>`;
         return;
       }
 
@@ -479,15 +704,12 @@
         btn.addEventListener('click', async () => {
           const qa = quickActions.find(x => x.id === btn.dataset.runQa);
           if (!qa) return;
+          const accId = qa.accountId || 'acc_principal';
           const today = new Date().toISOString().split('T')[0];
           await addDoc(collection(db, "nomi_transactions"), {
-            type: qa.type, amount: Number(qa.amount), concept: qa.label, category: qa.category, date: today, createdAt: Date.now()
+            type: qa.type, accountId: accId, amount: Number(qa.amount), concept: qa.label, category: qa.category, date: today, createdAt: Date.now()
           });
-          if (qa.category === 'Ahorro') {
-            triggerCelebration(qa.amount);
-          } else {
-            showToast(`${qa.label} registrado`);
-          }
+          handlePostTransactionHooks(qa.type, accId, qa.category, Number(qa.amount), qa.label);
         });
       });
     }
@@ -513,6 +735,7 @@
           if (!qa) return;
           document.getElementById('qa-id').value = qa.id;
           document.getElementById('qa-type').value = qa.type;
+          document.getElementById('qa-account').value = qa.accountId || 'acc_principal';
           document.getElementById('qa-category').value = qa.category;
           document.getElementById('qa-label').value = qa.label;
           document.getElementById('qa-amount').value = qa.amount;
@@ -533,17 +756,13 @@
     function resetQAForm() {
       document.getElementById('quick-action-form').reset();
       document.getElementById('qa-id').value = '';
+      document.getElementById('qa-account').value = 'acc_principal';
       document.getElementById('qa-form-title').textContent = 'Nueva Acción Rápida';
       document.getElementById('qa-cancel-edit').classList.add('hidden');
     }
 
-    document.getElementById('btn-open-quick-modal').addEventListener('click', () => {
-      resetQAForm();
-      document.getElementById('quick-modal').classList.remove('hidden');
-    });
-    document.getElementById('btn-close-quick-modal').addEventListener('click', () => {
-      document.getElementById('quick-modal').classList.add('hidden');
-    });
+    document.getElementById('btn-open-quick-modal').addEventListener('click', () => { resetQAForm(); document.getElementById('quick-modal').classList.remove('hidden'); });
+    document.getElementById('btn-close-quick-modal').addEventListener('click', () => document.getElementById('quick-modal').classList.add('hidden'));
     document.getElementById('qa-cancel-edit').addEventListener('click', resetQAForm);
 
     document.getElementById('quick-action-form').addEventListener('submit', async (e) => {
@@ -552,11 +771,11 @@
       const item = {
         id: id || 'qa_' + Date.now(),
         type: document.getElementById('qa-type').value,
+        accountId: document.getElementById('qa-account').value,
         category: document.getElementById('qa-category').value,
         label: document.getElementById('qa-label').value.trim(),
         amount: parseFloat(document.getElementById('qa-amount').value)
       };
-
       if (id) {
         quickActions = quickActions.map(x => x.id === id ? item : x);
         showToast('Acción actualizada');
@@ -568,30 +787,27 @@
       resetQAForm();
     });
 
-    // --- MOVIMIENTOS ---
+    // --- MOVIMIENTOS Y GRÁFICAS ---
+    async function handlePostTransactionHooks(type, accountId, category, amount, label) {
+      if (accountId === 'acc_ahorro' && type === 'gasto') {
+        await updateSavingsDebt(savingsDebt + amount);
+        showToast(`Retiraste $${amount.toLocaleString()} de tu ahorro`);
+      } else if ((accountId === 'acc_ahorro' && type === 'ingreso') || (accountId === 'acc_principal' && type === 'gasto' && category === 'Ahorro')) {
+        if (savingsDebt > 0) await updateSavingsDebt(savingsDebt - amount);
+        triggerCelebration(amount);
+      } else {
+        showToast(`${label} registrado`);
+      }
+    }
+
     function listenTransactions() {
       const q = query(collection(db, "nomi_transactions"), orderBy("date", "desc"));
       onSnapshot(q, (snapshot) => {
         allTransactions = [];
-        let principal = 0;
-        let ahorro = 0;
-
-        snapshot.forEach((docSnap) => {
-          const data = { id: docSnap.id, ...docSnap.data() };
-          allTransactions.push(data);
-          const amt = Number(data.amount) || 0;
-          if (data.type === 'ingreso') {
-            principal += amt;
-          } else {
-            principal -= amt;
-            if (data.category === 'Ahorro') ahorro += amt;
-          }
-        });
-
-        currentAhorroTotal = ahorro;
-        document.getElementById('balance-principal').textContent = `$${principal.toLocaleString()}`;
-        document.getElementById('balance-ahorro').textContent = `$${ahorro.toLocaleString()}`;
+        snapshot.forEach((docSnap) => allTransactions.push({ id: docSnap.id, ...docSnap.data() }));
+        renderAccountsGrid();
         renderTransactions();
+        renderCharts();
       });
     }
 
@@ -602,22 +818,26 @@
         return;
       }
 
-      list.innerHTML = allTransactions.map(t => `
-        <div class="flex justify-between items-center p-4 hover:bg-gray-50 transition-colors">
-          <div>
-            <p class="font-semibold text-sm text-gray-800">${t.concept}</p>
-            <p class="text-xs text-gray-400">${t.date} • ${t.category}</p>
+      list.innerHTML = allTransactions.map(t => {
+        const acc = accounts.find(a => a.id === (t.accountId || 'acc_principal'));
+        const accName = acc ? acc.name : 'Cuenta Principal';
+        return `
+          <div class="flex justify-between items-center p-4 hover:bg-gray-50 transition-colors">
+            <div>
+              <p class="font-semibold text-sm text-gray-800">${t.concept}</p>
+              <p class="text-xs text-gray-400">${t.date} • ${t.category} • <span class="text-blue-500">${accName}</span></p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-sm ${t.type === 'ingreso' ? 'text-emerald-600' : 'text-red-500'}">
+                ${t.type === 'ingreso' ? '+' : '-'}$${Number(t.amount).toLocaleString()}
+              </span>
+              <button data-delete="${t.id}" class="delete-btn text-gray-300 hover:text-red-500 transition-colors p-1">
+                <i class="fas fa-trash-alt text-xs"></i>
+              </button>
+            </div>
           </div>
-          <div class="flex items-center gap-3">
-            <span class="font-bold text-sm ${t.type === 'ingreso' ? 'text-emerald-600' : 'text-red-500'}">
-              ${t.type === 'ingreso' ? '+' : '-'}$${Number(t.amount).toLocaleString()}
-            </span>
-            <button data-delete="${t.id}" class="delete-btn text-gray-300 hover:text-red-500 transition-colors p-1">
-              <i class="fas fa-trash-alt text-xs"></i>
-            </button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
 
       document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -629,31 +849,85 @@
       });
     }
 
+    function renderCharts() {
+      let totalIn = 0;
+      let totalOut = 0;
+      const catTotals = {};
+
+      allTransactions.forEach(t => {
+        const amt = Number(t.amount) || 0;
+        if (t.category === 'Saldo Inicial') return;
+        if (t.type === 'ingreso') totalIn += amt;
+        else {
+          totalOut += amt;
+          catTotals[t.category] = (catTotals[t.category] || 0) + amt;
+        }
+      });
+
+      if (flowChart) flowChart.destroy();
+      flowChart = new Chart(document.getElementById('chart-flow'), {
+        type: 'bar',
+        data: {
+          labels: ['Ingresos', 'Gastos'],
+          datasets: [{
+            data: [totalIn, totalOut],
+            backgroundColor: ['#10b981', '#ef4444'],
+            borderRadius: 10,
+            barThickness: 45
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+        }
+      });
+
+      if (catChart) catChart.destroy();
+      const catLabels = Object.keys(catTotals);
+      const catValues = Object.values(catTotals);
+      catChart = new Chart(document.getElementById('chart-categories'), {
+        type: 'doughnut',
+        data: {
+          labels: catLabels.length ? catLabels : ['Sin gastos'],
+          datasets: [{
+            data: catValues.length ? catValues : [1],
+            backgroundColor: catValues.length ? ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#64748b'] : ['#e2e8f0'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '65%',
+          plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 11 } } } }
+        }
+      });
+    }
+
     document.getElementById('transaction-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const type = document.querySelector('input[name="type"]:checked').value;
+      const accountId = document.getElementById('input-account').value;
       const amount = parseFloat(document.getElementById('input-amount').value);
       const concept = document.getElementById('input-concept').value.trim();
       const category = document.getElementById('input-category').value;
       const date = document.getElementById('input-date').value;
 
-      await addDoc(collection(db, "nomi_transactions"), { type, amount, concept, category, date, createdAt: Date.now() });
+      await addDoc(collection(db, "nomi_transactions"), { type, accountId, amount, concept, category, date, createdAt: Date.now() });
       e.target.reset();
+      document.getElementById('input-account').value = 'acc_principal';
       document.getElementById('input-date').valueAsDate = new Date();
       switchTab('dashboard');
-
-      if (category === 'Ahorro') {
-        triggerCelebration(amount);
-      } else {
-        showToast('Movimiento guardado');
-      }
+      await handlePostTransactionHooks(type, accountId, category, amount, concept);
     });
 
     // Exportar CSV
     document.getElementById('btn-export').addEventListener('click', () => {
       if (allTransactions.length === 0) return showToast('No hay datos para exportar');
-      const headers = ['Fecha', 'Tipo', 'Categoria', 'Concepto', 'Monto'];
-      const rows = allTransactions.map(t => [t.date, t.type, t.category, `"${t.concept}"`, t.amount]);
+      const headers = ['Fecha', 'Cuenta', 'Tipo', 'Categoria', 'Concepto', 'Monto'];
+      const rows = allTransactions.map(t => {
+        const acc = accounts.find(a => a.id === (t.accountId || 'acc_principal'));
+        return [t.date, `"${acc ? acc.name : 'Cuenta Principal'}"`, t.type, t.category, `"${t.concept}"`, t.amount];
+      });
       const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
