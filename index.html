@@ -645,7 +645,7 @@
       const toRepay = savingsDebt;
       const today = new Date().toISOString().split('T')[0];
       await addDoc(collection(db, "nomi_transactions"), {
-        type: 'ingreso', accountId: 'acc_ahorro', amount: toRepay, concept: 'Reposición de Ahorro', category: 'Ahorro', date: today, createdAt: Date.now()
+        type: 'gasto', accountId: 'acc_principal', amount: toRepay, concept: 'Reposición de Ahorro', category: 'Ahorro', date: today, createdAt: Date.now()
       });
       await updateSavingsDebt(0);
       triggerCelebration(toRepay);
