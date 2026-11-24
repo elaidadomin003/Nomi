@@ -1,1206 +1,549 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nomi - Finanzas Personales</title>
-    <!-- Tailwind CSS para estilos rápidos y responsivos -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Phosphor Icons para iconos modernos -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Chart.js para gráficas -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <style>
-        /* Estilos personalizados sutiles */
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        /* Ocultar barra de desplazamiento pero permitir scroll */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        
-        /* Animaciones para vistas */
-        .fade-in {
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Nomi">
+  <title>Nomi - Finanzas Inteligentes</title>
 
-        /* Toast notification */
-        #toast {
-            transition: opacity 0.3s, transform 0.3s;
-            transform: translateY(100%);
-            opacity: 0;
-        }
-        #toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    body { -webkit-tap-highlight-color: transparent; }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800 h-screen overflow-hidden flex flex-col md:flex-row">
+<body class="bg-[#f8fafc] font-sans text-gray-800 antialiased h-screen overflow-hidden flex flex-col md:flex-row">
 
-    <!-- PANTALLA DE CARGA / AUTENTICACIÓN -->
-    <div id="loading-screen" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
-        <i class="ph ph-wallet text-6xl text-blue-600 mb-4 animate-bounce"></i>
-        <h1 class="text-2xl font-bold text-gray-800">Nomi</h1>
-        <p class="text-gray-500 mt-2" id="loading-text">Conectando a la bóveda...</p>
+  <!-- Pantalla de carga -->
+  <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-50">
+    <div class="text-center animate-pulse">
+      <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+        <i class="fas fa-wallet text-white text-3xl"></i>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-800">Nomi</h1>
+      <p class="text-sm text-gray-500 mt-2">Conectando a tu bóveda...</p>
     </div>
+  </div>
 
-    <!-- NAVEGACIÓN LATERAL (DESKTOP) -->
-    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 h-full">
-        <div class="p-6 border-b border-gray-100 flex items-center gap-3">
-            <div class="bg-blue-600 p-2 rounded-lg text-white">
-                <i class="ph ph-wallet text-xl"></i>
-            </div>
-            <h1 class="text-xl font-bold text-gray-800">Nomi</h1>
+  <!-- Toast de notificación -->
+  <div id="toast" class="fixed top-5 right-5 z-50 hidden bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg transition-all"></div>
+
+  <!-- APP PRINCIPAL -->
+  <div id="main-app" class="hidden w-full h-full flex flex-col md:flex-row">
+    
+    <!-- Navegación -->
+    <nav class="bg-white md:w-64 border-t md:border-t-0 md:border-r border-gray-200 md:h-full flex-shrink-0 order-2 md:order-1 fixed md:relative bottom-0 w-full z-40">
+      <div class="hidden md:flex items-center p-6 border-b border-gray-100">
+        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-md mr-3">
+          <i class="fas fa-wallet text-white"></i>
         </div>
-        
-        <nav class="flex-1 p-4 space-y-2">
-            <button onclick="switchView('dashboard')" id="nav-desktop-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors bg-blue-50 text-blue-600 font-medium">
-                <i class="ph ph-squares-four text-xl"></i>
-                Dashboard
-            </button>
-            <button onclick="switchView('add')" id="nav-desktop-add" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-gray-600 hover:bg-gray-50 font-medium">
-                <i class="ph ph-plus-circle text-xl"></i>
-                Nuevo Registro
-            </button>
-            <button onclick="switchView('simulator')" id="nav-desktop-simulator" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-gray-600 hover:bg-gray-50 font-medium">
-                <i class="ph ph-calculator text-xl"></i>
-                Simulador
-            </button>
-            <button onclick="switchView('notes')" id="nav-desktop-notes" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-gray-600 hover:bg-gray-50 font-medium">
-                <i class="ph ph-notepad text-xl"></i>
-                Notas
-            </button>
-        </nav>
-
-        <div class="p-4 border-t border-gray-100">
-            <div class="text-xs text-gray-400 mb-1">Usuario ID:</div>
-            <div id="user-id-display" class="text-xs text-gray-600 font-mono truncate">...</div>
+        <div>
+          <h1 class="font-bold text-xl text-gray-900 tracking-tight">Nomi</h1>
+          <p class="text-xs text-gray-400 font-medium uppercase tracking-wider">Finanzas</p>
         </div>
-    </aside>
+      </div>
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="flex-1 h-full overflow-y-auto no-scrollbar pb-24 md:pb-6 relative">
-        
-        <!-- VISTA: DASHBOARD -->
-        <div id="view-dashboard" class="p-4 md:p-8 max-w-5xl mx-auto fade-in">
-            <header class="mb-6 flex justify-between items-center md:hidden">
-                <h2 class="text-2xl font-bold">Resumen</h2>
-                <div class="bg-blue-100 text-blue-600 p-2 rounded-full">
-                    <i class="ph ph-wallet text-xl"></i>
-                </div>
-            </header>
-
-            <!-- Checklist de Quincena Inteligente -->
-            <div id="fortnight-checklist" class="hidden mb-8">
-                <h3 class="text-lg font-bold mb-3 text-gray-800 flex items-center gap-2">
-                    <i class="ph ph-list-checks text-blue-600"></i> Obligaciones de Quincena
-                </h3>
-                <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm" id="checklist-container">
-                    <!-- El contenido se inyecta via JS -->
-                </div>
-            </div>
-
-            <!-- Cuentas -->
-            <h3 class="text-lg font-bold mb-3 text-gray-800">Mis Cuentas</h3>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-                <div class="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-                    <p class="text-gray-500 text-xs font-medium mb-1">Cuenta Principal</p>
-                    <h3 class="text-xl font-bold text-gray-800" id="bal-principal">$0.00</h3>
-                </div>
-                <div class="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-                    <p class="text-gray-500 text-xs font-medium mb-1">Ahorros</p>
-                    <h3 class="text-xl font-bold text-blue-600" id="bal-ahorro">$0.00</h3>
-                </div>
-                <div class="bg-red-50 border border-red-100 rounded-2xl p-4 shadow-sm col-span-2 md:col-span-1">
-                    <p class="text-red-500 text-xs font-medium mb-1">Deuda conmigo mismo</p>
-                    <h3 class="text-xl font-bold text-red-600" id="bal-deuda">$0.00</h3>
-                </div>
-            </div>
-
-            <h3 class="text-lg font-bold mb-3 text-gray-800">Flujo Mensual</h3>
-            <!-- Tarjetas de Resumen -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <!-- Balance -->
-                <div class="bg-gray-900 rounded-2xl p-6 text-white shadow-lg">
-                    <p class="text-gray-400 text-sm font-medium mb-1">Balance Actual</p>
-                    <h3 class="text-3xl font-bold" id="total-balance">$0.00</h3>
-                </div>
-                <!-- Ingresos -->
-                <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm font-medium mb-1">Ingresos</p>
-                        <h3 class="text-xl font-bold text-green-600" id="total-income">$0.00</h3>
-                    </div>
-                    <div class="bg-green-100 p-3 rounded-full text-green-600">
-                        <i class="ph ph-trend-up text-xl"></i>
-                    </div>
-                </div>
-                <!-- Gastos -->
-                <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm font-medium mb-1">Gastos</p>
-                        <h3 class="text-xl font-bold text-red-600" id="total-expense">$0.00</h3>
-                    </div>
-                    <div class="bg-red-100 p-3 rounded-full text-red-600">
-                        <i class="ph ph-trend-down text-xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Gráfica -->
-                <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm lg:col-span-1">
-                    <h3 class="text-lg font-bold mb-4">Gastos por Categoría</h3>
-                    <div class="relative h-64 w-full flex justify-center">
-                        <canvas id="expensesChart"></canvas>
-                        <!-- Mensaje si no hay datos -->
-                        <div id="no-chart-data" class="absolute inset-0 flex items-center justify-center text-gray-400 hidden">
-                            No hay gastos registrados
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Lista de Transacciones Recientes (Estilo Netbanking) -->
-                <div class="bg-white rounded-2xl p-0 md:p-6 border border-gray-100 shadow-sm lg:col-span-2 overflow-hidden flex flex-col">
-                    
-                    <!-- NUEVO MÓDULO: Exportación a Excel -->
-                    <div class="p-5 md:p-0 mb-4 border-b border-gray-100 pb-5">
-                        <h3 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="ph ph-download-simple text-blue-600"></i> Exportar Historial (Excel/CSV)
-                        </h3>
-                        <div class="flex flex-col md:flex-row gap-3 items-end">
-                            <div class="flex-1 w-full">
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Desde</label>
-                                <input type="date" id="export-start" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-700">
-                            </div>
-                            <div class="flex-1 w-full">
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Hasta</label>
-                                <input type="date" id="export-end" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-700">
-                            </div>
-                            <button onclick="exportToCSV()" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-xl transition-colors shadow-sm shadow-green-200 flex items-center justify-center gap-2">
-                                <i class="ph ph-file-csv text-lg"></i> Exportar
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center px-5 md:px-0 mb-2 md:mb-4">
-                        <h3 class="text-lg font-bold text-gray-800">Últimos Movimientos</h3>
-                        <button class="text-sm text-blue-600 font-medium hover:underline flex items-center gap-1">
-                            Ver todos <i class="ph ph-caret-right"></i>
-                        </button>
-                    </div>
-                    
-                    <!-- Cabeceras de tabla (solo desktop) -->
-                    <div class="hidden md:grid grid-cols-12 gap-4 px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wider border-y border-gray-100 bg-gray-50/50">
-            <form id="add-form" class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
-                <!-- Tipo (Ingreso / Gasto / Movimiento) -->
-                <div class="flex p-1 bg-gray-100 rounded-xl mb-6">
-                    <label class="flex-1 text-center relative cursor-pointer">
-                        <input type="radio" name="type" value="expense" class="peer sr-only" checked>
-                        <div class="py-2 text-xs md:text-sm font-medium rounded-lg text-gray-500 peer-checked:bg-white peer-checked:text-red-600 peer-checked:shadow-sm transition-all">
-                            Gasto
-                        </div>
-                    </label>
-                    <label class="flex-1 text-center relative cursor-pointer">
-                        <input type="radio" name="type" value="income" class="peer sr-only">
-                        <div class="py-2 text-xs md:text-sm font-medium rounded-lg text-gray-500 peer-checked:bg-white peer-checked:text-green-600 peer-checked:shadow-sm transition-all">
-                            Ingreso
-                        </div>
-                    </label>
-                    <label class="flex-1 text-center relative cursor-pointer">
-                        <input type="radio" name="type" value="transfer" class="peer sr-only">
-                        <div class="py-2 text-xs md:text-sm font-medium rounded-lg text-gray-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">
-                            Movimiento
-                        </div>
-                    </label>
-                </div>
-
-                <!-- Selección de Cuenta (Para Gasto/Ingreso) -->
-                <div class="mb-6" id="account-selector-group">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Cuenta afectada</label>
-                    <div class="relative">
-                        <select id="account-source" class="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer">
-                            <option value="Principal">💳 Cuenta Principal</option>
-                            <option value="Ahorro">🐷 Cuenta de Ahorro</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
-                            <i class="ph ph-caret-down"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tipo de Movimiento (Solo para Transferencias) -->
-                <div class="mb-6 hidden" id="transfer-selector-group">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">¿Qué estás haciendo?</label>
-                    <div class="relative">
-                        <select id="transfer-type" class="block w-full px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer">
-                            <option value="save">💰 Ahorrar (Paso a mi ahorro)</option>
-                            <option value="borrow">🚨 Tomar Prestado (Saco de mi ahorro)</option>
-                            <option value="repay">✅ Pagarme (Devuelvo a mi ahorro)</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
-                            <i class="ph ph-caret-down"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Monto -->
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Monto</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <span class="text-gray-500 text-xl font-bold">$</span>
-                        </div>
-                        <input type="number" id="amount" step="0.01" min="0" required
-                            class="block w-full pl-10 pr-4 py-4 bg-gray-50 border-0 rounded-2xl text-3xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow placeholder-gray-300"
-                            placeholder="0.00">
-                    </div>
-                </div>
-
-                <!-- Categoría -->
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
-                    <div class="relative">
-                        <select id="category" required
-                            class="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none cursor-pointer">
-                            <option value="Comida">🍔 Comida</option>
-                            <option value="Transporte">🚗 Transporte</option>
-                            <option value="Hogar">🏠 Hogar</option>
-                            <option value="Ocio">🎮 Ocio / Gustos</option>
-                            <option value="Salud">💊 Salud</option>
-                            <option value="Salario">💰 Salario / Ingresos</option>
-                            <option value="Otros">📝 Otros</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
-                            <i class="ph ph-caret-down"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Descripción -->
-                <div class="mb-8">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Concepto (Opcional)</label>
-                    <input type="text" id="description"
-                        class="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none placeholder-gray-400"
-                        placeholder="Ej. Tacos en la esquina">
-                </div>
-
-                <!-- Botón Guardar -->
-                <button type="submit" id="submit-btn"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-colors shadow-lg shadow-blue-200 flex justify-center items-center gap-2">
-                    <i class="ph ph-floppy-disk text-xl"></i>
-                    <span>Guardar Registro</span>
-                </button>
-            </form>
-        </div>
-
-        <!-- VISTA: SIMULADOR DE QUINCENA -->
-        <div id="view-simulator" class="hidden p-4 md:p-8 max-w-2xl mx-auto fade-in">
-            <header class="mb-6 text-center md:text-left">
-                <h2 class="text-2xl font-bold">Simulador de Quincena</h2>
-                <p class="text-gray-500 text-sm">Proyecta tus gastos antes de cobrar</p>
-            </header>
-
-            <!-- Ingreso Esperado -->
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-4">Selecciona tu Quincena</label>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <button type="button" onclick="setSimIncome(34580, this)" class="sim-income-btn flex items-center justify-between p-4 rounded-xl border-2 border-gray-200 text-left hover:border-blue-300 transition-colors">
-                        <div>
-                            <p class="font-bold text-gray-800">Día 15</p>
-                        </div>
-                        <span class="font-bold text-blue-600 text-lg">$34,580</span>
-                    </button>
-                    <button type="button" onclick="setSimIncome(27663, this)" class="sim-income-btn flex items-center justify-between p-4 rounded-xl border-2 border-gray-200 text-left hover:border-blue-300 transition-colors">
-                        <div>
-                            <p class="font-bold text-gray-800">Día 30</p>
-                        </div>
-                        <span class="font-bold text-blue-600 text-lg">$27,663</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Resumen y Sobrante -->
-            <div class="grid grid-cols-3 gap-3 md:gap-4 mb-6">
-                <div class="bg-gray-50 rounded-xl p-3 md:p-4 border border-gray-100 text-center">
-                    <p class="text-xs text-gray-500 font-medium mb-1">Ingreso</p>
-                    <p class="text-sm md:text-lg font-bold text-gray-800" id="sim-total-income">$0.00</p>
-                </div>
-                <div class="bg-gray-50 rounded-xl p-3 md:p-4 border border-gray-100 text-center">
-                    <p class="text-xs text-gray-500 font-medium mb-1">Planeado</p>
-                    <p class="text-sm md:text-lg font-bold text-red-500" id="sim-total-planned">$0.00</p>
-                </div>
-                <div class="bg-white rounded-xl p-3 md:p-4 border border-gray-200 text-center shadow-sm transition-colors" id="sim-remaining-card">
-                    <p class="text-xs text-gray-500 font-medium mb-1">Sobrante</p>
-                    <p class="text-sm md:text-lg font-bold text-gray-800" id="sim-remaining">$0.00</p>
-                </div>
-            </div>
-
-            <!-- Agregar Gastos Planeados -->
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
-                <h3 class="text-sm font-bold text-gray-800 mb-4">Agregar Gasto Planeado</h3>
-                <form id="sim-add-form" class="flex flex-col md:flex-row gap-3">
-                    <input type="text" id="sim-concept" required placeholder="Concepto (Ej. Regalo Hermana)" class="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                    <input type="number" id="sim-amount" required step="0.01" min="0" placeholder="Monto" class="w-full md:w-32 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2">
-                        <i class="ph ph-plus-circle text-lg"></i> <span class="md:hidden">Agregar</span>
-                    </button>
-                </form>
-            </div>
-
-            <!-- Lista de Gastos Planeados -->
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-8 md:mb-0">
-                <div id="sim-items-list" class="divide-y divide-gray-100">
-                    <p class="text-center text-gray-400 py-6 text-sm">No has agregado gastos planeados</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- VISTA: NOTAS -->
-        <div id="view-notes" class="hidden p-4 md:p-8 max-w-2xl mx-auto fade-in h-full flex flex-col">
-            <header class="mb-4 text-center md:text-left">
-                <h2 class="text-2xl font-bold">Bloc de Notas</h2>
-                <p class="text-gray-500 text-sm">Anota deudas informales, préstamos y recordatorios.</p>
-            </header>
-            
-            <div class="flex-1 min-h-[300px] flex flex-col relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-8">
-                <textarea id="notepad-area" class="flex-1 w-full p-6 bg-transparent resize-none outline-none text-gray-700 leading-relaxed" placeholder="Ej. Le presté 500 a Juan. / Le debo 1,000 a mamá por la compra..."></textarea>
-                <div class="bg-gray-50 px-4 py-2 flex items-center justify-between text-xs text-gray-400 border-t border-gray-100 transition-colors" id="notepad-status-container">
-                    <span id="notepad-status" class="flex items-center gap-1 transition-colors"><i class="ph ph-check-circle"></i> Guardado automáticamente</span>
-                    <i class="ph ph-pencil-simple"></i>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- NAVEGACIÓN INFERIOR (MOBILE) -->
-    <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 flex justify-around items-center pb-safe pt-2 px-2 z-40" style="padding-bottom: max(env(safe-area-inset-bottom), 1rem);">
-        <button onclick="switchView('dashboard')" id="nav-mobile-dashboard" class="flex flex-col items-center p-2 text-blue-600 w-16">
-            <i class="ph ph-squares-four text-2xl mb-1"></i>
-            <span class="text-[10px] font-medium">Inicio</span>
+      <div class="flex md:flex-col justify-around md:justify-start p-2 md:p-4 gap-1 md:gap-2">
+        <button data-tab="dashboard" class="nav-btn flex flex-col md:flex-row items-center md:px-4 py-2 md:py-3 rounded-xl text-blue-600 md:bg-blue-50 transition-all">
+          <i class="fas fa-chart-pie text-lg md:mr-3 mb-1 md:mb-0"></i>
+          <span class="text-[10px] md:text-sm font-medium">Dashboard</span>
         </button>
-
-        <button onclick="switchView('notes')" id="nav-mobile-notes" class="flex flex-col items-center p-2 text-gray-400 w-16">
-            <i class="ph ph-notepad text-2xl mb-1"></i>
-            <span class="text-[10px] font-medium">Notas</span>
+        <button data-tab="registro" class="nav-btn flex flex-col md:flex-row items-center md:px-4 py-2 md:py-3 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-all">
+          <i class="fas fa-plus-circle text-lg md:mr-3 mb-1 md:mb-0"></i>
+          <span class="text-[10px] md:text-sm font-medium">Registro</span>
         </button>
-        
-        <!-- Botón Flotante Central -->
-        <div class="relative -top-6">
-            <button onclick="switchView('add')" class="bg-blue-600 text-white p-4 rounded-full shadow-lg shadow-blue-200 flex items-center justify-center transform transition-transform active:scale-95">
-                <i class="ph ph-plus text-2xl"></i>
-            </button>
-        </div>
-
-        <button onclick="switchView('simulator')" id="nav-mobile-simulator" class="flex flex-col items-center p-2 text-gray-400 w-16">
-            <i class="ph ph-calculator text-2xl mb-1"></i>
-            <span class="text-[10px] font-medium">Simular</span>
+        <button data-tab="simulador" class="nav-btn flex flex-col md:flex-row items-center md:px-4 py-2 md:py-3 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-all">
+          <i class="fas fa-calculator text-lg md:mr-3 mb-1 md:mb-0"></i>
+          <span class="text-[10px] md:text-sm font-medium">Simulador</span>
         </button>
+        <button data-tab="notas" class="nav-btn flex flex-col md:flex-row items-center md:px-4 py-2 md:py-3 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-all">
+          <i class="fas fa-sticky-note text-lg md:mr-3 mb-1 md:mb-0"></i>
+          <span class="text-[10px] md:text-sm font-medium">Notas</span>
+        </button>
+      </div>
     </nav>
 
-    <!-- Componente Toast (Notificaciones) -->
-    <div id="toast" class="fixed bottom-24 md:bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 z-50 pointer-events-none">
-        <i id="toast-icon" class="ph ph-check-circle text-green-400 text-xl"></i>
-        <span id="toast-message" class="text-sm font-medium">Guardado exitosamente</span>
-    </div>
+    <!-- Contenido -->
+    <main class="flex-1 overflow-y-auto pb-24 md:pb-8 order-1 md:order-2">
+      <div class="max-w-4xl mx-auto p-4 md:p-8">
 
-    <!-- FIREBASE & LÓGICA DE LA APP -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        <!-- VISTA 1: DASHBOARD -->
+        <section id="view-dashboard" class="view-section space-y-6">
+          <header class="flex justify-between items-center">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-800">Resumen</h2>
+              <p class="text-sm text-gray-500">Sincronizado en tiempo real</p>
+            </div>
+            <button id="btn-export" class="bg-emerald-600 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-emerald-700 transition-colors flex items-center shadow-sm">
+              <i class="fas fa-file-excel mr-2"></i> Exportar CSV
+            </button>
+          </header>
 
-        // 1. Configuración de Entorno y Firebase
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'finance-app-standalone';
-        
-        // Inyectando las llaves extraídas de tu archivo Plist
-        let firebaseConfig = {
-            apiKey: "AIzaSyBOmBxLPf-l2dUkiXCeRl3Q53tW67hT3mY",
-            authDomain: "nomi-f68ea.firebaseapp.com",
-            projectId: "nomi-f68ea",
-            storageBucket: "nomi-f68ea.firebasestorage.app",
-            messagingSenderId: "143501129487",
-            appId: "1:143501129487:web:d8e5f6g7h8i9j0k1" // Dummy Web ID temporal
-        };
-        
-        try {
-            if (typeof __firebase_config !== 'undefined') {
-                firebaseConfig = JSON.parse(__firebase_config);
-            }
-        } catch(e) {
-            console.warn("Usando configuración manual de Firebase de Nomi.");
+          <!-- Balances -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl p-5 text-white shadow-lg">
+              <p class="text-blue-100 text-xs md:text-sm font-medium mb-1">Cuenta Principal</p>
+              <h3 id="balance-principal" class="text-2xl md:text-3xl font-bold">$0</h3>
+            </div>
+            <div class="bg-gradient-to-br from-emerald-600 to-emerald-400 rounded-2xl p-5 text-white shadow-lg">
+              <p class="text-emerald-100 text-xs md:text-sm font-medium mb-1">Ahorro Protegido</p>
+              <h3 id="balance-ahorro" class="text-2xl md:text-3xl font-bold">$0</h3>
+            </div>
+          </div>
+
+          <!-- Pendientes de Quincena -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <h3 class="text-base font-bold text-gray-800 mb-4 flex items-center">
+              <i class="fas fa-clipboard-check text-blue-500 mr-2"></i> Acciones Rápidas de Quincena
+            </h3>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                <div class="flex items-center">
+                  <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mr-3">
+                    <i class="fas fa-piggy-bank"></i>
+                  </div>
+                  <div>
+                    <p class="font-semibold text-sm text-gray-800">Ahorro Quincenal</p>
+                    <p class="text-xs text-gray-500">Meta fija</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="font-bold text-sm text-gray-800">$7,000</span>
+                  <button id="quick-ahorro" class="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg hover:bg-black transition-colors">Registrar</button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                <div class="flex items-center">
+                  <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mr-3">
+                    <i class="fas fa-hand-holding-heart"></i>
+                  </div>
+                  <div>
+                    <p class="font-semibold text-sm text-gray-800">Diezmo (10%)</p>
+                    <p class="text-xs text-gray-500">Calculado del último ingreso</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span id="quick-diezmo-amount" class="font-bold text-sm text-gray-800">$3,458</span>
+                  <button id="quick-diezmo" class="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg hover:bg-black transition-colors">Registrar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Últimos Movimientos -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-5 border-b border-gray-100">
+              <h3 class="text-base font-bold text-gray-800">Últimos Movimientos</h3>
+            </div>
+            <div id="transactions-list" class="divide-y divide-gray-50">
+              <p class="p-6 text-center text-sm text-gray-400">Cargando movimientos...</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 2: NUEVO REGISTRO -->
+        <section id="view-registro" class="view-section hidden space-y-6">
+          <header>
+            <h2 class="text-2xl font-bold text-gray-800">Nuevo Registro</h2>
+            <p class="text-sm text-gray-500">Agrega un ingreso o gasto al instante</p>
+          </header>
+
+          <!-- Botones rápidos de quincena -->
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" id="fill-q15" class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-left hover:bg-blue-100 transition-colors">
+              <p class="text-xs text-blue-600 font-semibold">Ingreso Rápido</p>
+              <p class="text-sm font-bold text-blue-900">Quincena 15 ($34,580)</p>
+            </button>
+            <button type="button" id="fill-q30" class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-left hover:bg-blue-100 transition-colors">
+              <p class="text-xs text-blue-600 font-semibold">Ingreso Rápido</p>
+              <p class="text-sm font-bold text-blue-900">Quincena 30 ($27,663)</p>
+            </button>
+          </div>
+
+          <form id="transaction-form" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+              <label class="cursor-pointer">
+                <input type="radio" name="type" value="gasto" checked class="peer hidden">
+                <div class="text-center py-3 rounded-xl border border-gray-200 peer-checked:bg-red-50 peer-checked:border-red-500 peer-checked:text-red-600 font-semibold text-sm transition-all">
+                  <i class="fas fa-arrow-down mr-1"></i> Gasto
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="type" value="ingreso" class="peer hidden">
+                <div class="text-center py-3 rounded-xl border border-gray-200 peer-checked:bg-emerald-50 peer-checked:border-emerald-500 peer-checked:text-emerald-600 font-semibold text-sm transition-all">
+                  <i class="fas fa-arrow-up mr-1"></i> Ingreso
+                </div>
+              </label>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Monto ($)</label>
+              <input type="number" id="input-amount" required min="1" step="any" placeholder="0.00" class="w-full text-2xl font-bold p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Concepto</label>
+              <input type="text" id="input-concept" required placeholder="Ej. Supermercado, Gasolina, Quincena..." class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Categoría</label>
+                <select id="input-category" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="Comida">Comida</option>
+                  <option value="Servicios">Servicios</option>
+                  <option value="Transporte">Transporte</option>
+                  <option value="Ahorro">Ahorro</option>
+                  <option value="Diezmo">Diezmo</option>
+                  <option value="Sueldo">Sueldo</option>
+                  <option value="Personal">Personal</option>
+                  <option value="Otros">Otros</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Fecha</label>
+                <input type="date" id="input-date" required class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-colors shadow-md">
+              Guardar Movimiento
+            </button>
+          </form>
+        </section>
+
+        <!-- VISTA 3: SIMULADOR -->
+        <section id="view-simulador" class="view-section hidden space-y-6">
+          <header>
+            <h2 class="text-2xl font-bold text-gray-800">Simulador de Quincena</h2>
+            <p class="text-sm text-gray-500">Planifica antes de gastar</p>
+          </header>
+
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
+            <div class="flex gap-2">
+              <button type="button" id="sim-q15" class="flex-1 py-2 px-3 rounded-xl bg-blue-600 text-white text-sm font-semibold">Quincena 15 ($34,580)</button>
+              <button type="button" id="sim-q30" class="flex-1 py-2 px-3 rounded-xl bg-gray-100 text-gray-700 text-sm font-semibold">Quincena 30 ($27,663)</button>
+            </div>
+
+            <div class="p-4 rounded-xl bg-gray-50 border border-gray-200 text-center">
+              <p class="text-xs text-gray-500 uppercase font-semibold">Disponible Libre</p>
+              <h3 id="sim-libre" class="text-3xl font-bold text-emerald-600 mt-1">$0</h3>
+            </div>
+
+            <div class="space-y-4">
+              <div class="flex justify-between items-center text-sm">
+                <span class="text-gray-600">Diezmo automático (10%)</span>
+                <span id="sim-diezmo" class="font-bold text-purple-600">$3,458</span>
+              </div>
+              <div class="flex justify-between items-center text-sm">
+                <span class="text-gray-600">Meta de Ahorro fija</span>
+                <span class="font-bold text-emerald-600">$7,000</span>
+              </div>
+              <hr class="border-gray-100">
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <label class="font-medium text-gray-700">Gastos Fijos / Servicios</label>
+                  <span id="val-fijos" class="font-bold">$8,000</span>
+                </div>
+                <input type="range" id="range-fijos" min="0" max="20000" step="500" value="8000" class="w-full accent-blue-600">
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <label class="font-medium text-gray-700">Comida / Supermercado</label>
+                  <span id="val-comida" class="font-bold">$5,000</span>
+                </div>
+                <input type="range" id="range-comida" min="0" max="15000" step="500" value="5000" class="w-full accent-blue-600">
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <label class="font-medium text-gray-700">Extras / Salidas / Regalos</label>
+                  <span id="val-extras" class="font-bold">$3,000</span>
+                </div>
+                <input type="range" id="range-extras" min="0" max="20000" step="500" value="3000" class="w-full accent-blue-600">
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 4: NOTAS -->
+        <section id="view-notas" class="view-section hidden space-y-6">
+          <header class="flex justify-between items-center">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-800">Notas Financieras</h2>
+              <p class="text-sm text-gray-500">Se guarda en tu nube de Firebase</p>
+            </div>
+            <button id="btn-save-notes" class="bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
+              Guardar
+            </button>
+          </header>
+
+          <textarea id="notes-area" rows="12" placeholder="Escribe recordatorios de pagos, metas o ideas..." class="w-full p-5 bg-white rounded-2xl shadow-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"></textarea>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- LÓGICA Y FIREBASE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA8lDLcPdL2TjJqQgWLbFXaZVTM7oNgEAI",
+      authDomain: "nomi-f68ea.firebaseapp.com",
+      projectId: "nomi-f68ea",
+      storageBucket: "nomi-f68ea.firebasestorage.app",
+      messagingSenderId: "143501129487",
+      appId: "1:143501129487:web:6491d7515e626803b5b07a",
+      measurementId: "G-NKXPCGX44K"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let allTransactions = [];
+    let lastIncomeAmount = 34580;
+    let simIncome = 34580;
+
+    // Utilidad Toast
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 2500);
+    }
+
+    // Navegación entre pestañas
+    function switchTab(tabName) {
+      document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
+      document.getElementById(`view-${tabName}`).classList.remove('hidden');
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (btn.dataset.tab === tabName) {
+          btn.classList.add('text-blue-600', 'md:bg-blue-50');
+          btn.classList.remove('text-gray-400');
+        } else {
+          btn.classList.remove('text-blue-600', 'md:bg-blue-50');
+          btn.classList.add('text-gray-400');
         }
+      });
+    }
 
-        // Estado global
-        let db, auth, currentUser;
-        let unsubscribeSnapshot = null;
-        let chartInstance = null;
-        let allTransactions = [];
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
 
-        // Colores para categorías (Chart.js)
-        const categoryColors = {
-            'Comida': '#F59E0B',    // Amber
-            'Transporte': '#3B82F6',// Blue
-            'Hogar': '#10B981',     // Emerald
-            'Ocio': '#8B5CF6',      // Purple
-            'Salud': '#EF4444',     // Red
-            'Salario': '#14B8A6',   // Teal
-            'Otros': '#9CA3AF'      // Gray
-        };
-        const categoryIcons = {
-            'Comida': 'hamburger',
-            'Transporte': 'car',
-            'Hogar': 'house',
-            'Ocio': 'game-controller',
-            'Salud': 'pill',
-            'Salario': 'money',
-            'Otros': 'list'
-        };
+    // Fecha de hoy por defecto
+    document.getElementById('input-date').valueAsDate = new Date();
 
-        // Tareas Fijas de Quincena
-        const fixedTasks = [
-            { id: 't_ahorro', title: 'Ahorro programado', amount: 7000, type: 'transfer', transferType: 'save', description: 'Ahorro de quincena', account: '' },
-            { id: 't_diezmo', title: 'Diezmo', amount: 2500, type: 'expense', category: 'Otros', description: 'Diezmo quincenal', account: 'Principal' }
-        ];
+    // Autenticación y carga de datos
+    signInAnonymously(auth).catch((error) => {
+      document.getElementById('loading-screen').innerHTML = `
+        <div class="text-center p-8 bg-white rounded-2xl shadow-xl max-w-sm mx-auto">
+          <div class="text-red-500 mb-3"><i class="fas fa-exclamation-circle text-4xl"></i></div>
+          <h2 class="text-lg font-bold text-gray-800 mb-2">Error de Conexión</h2>
+          <p class="text-sm text-gray-600">${error.message}</p>
+        </div>`;
+    });
 
-        // UI Helpers
-        const UI = {
-            loadingScreen: document.getElementById('loading-screen'),
-            userIdDisplay: document.getElementById('user-id-display'),
-            transactionsList: document.getElementById('transactions-list'),
-            totalBalance: document.getElementById('total-balance'),
-            totalIncome: document.getElementById('total-income'),
-            totalExpense: document.getElementById('total-expense'),
-            balPrincipal: document.getElementById('bal-principal'),
-            balAhorro: document.getElementById('bal-ahorro'),
-            balDeuda: document.getElementById('bal-deuda'),
-            checklistContainer: document.getElementById('checklist-container'),
-            fortnightChecklist: document.getElementById('fortnight-checklist'),
-            toast: document.getElementById('toast'),
-            toastMsg: document.getElementById('toast-message'),
-            toastMsg: document.getElementById('toast-message'),
-            toastIcon: document.getElementById('toast-icon')
-        };
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById('loading-screen').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        listenTransactions();
+        loadNotes();
+        updateSimulator();
+      }
+    });
 
-        // Reemplazamos la vieja alerta de pago por el Checklist inteligente
-        function updateChecklist() {
-            if(allTransactions.length === 0 && !currentUser) return;
+    // Escuchar movimientos en tiempo real
+    function listenTransactions() {
+      const q = query(collection(db, "nomi_transactions"), orderBy("date", "desc"));
+      onSnapshot(q, (snapshot) => {
+        allTransactions = [];
+        let principal = 0;
+        let ahorro = 0;
+        let foundIncome = false;
 
-            const today = new Date();
-            const day = today.getDate();
-            const month = today.getMonth();
-            const year = today.getFullYear();
-            
-            // Determinar en qué quincena estamos
-            let periodStart, periodEnd;
-            if (day <= 15) {
-                periodStart = new Date(year, month, 1).getTime();
-                periodEnd = new Date(year, month, 15, 23, 59, 59).getTime();
-            } else {
-                periodStart = new Date(year, month, 16).getTime();
-                periodEnd = new Date(year, month + 1, 0, 23, 59, 59).getTime();
+        snapshot.forEach((docSnap) => {
+          const data = { id: docSnap.id, ...docSnap.data() };
+          allTransactions.push(data);
+          const amt = Number(data.amount) || 0;
+
+          if (data.type === 'ingreso') {
+            principal += amt;
+            if (!foundIncome) {
+              lastIncomeAmount = amt;
+              foundIncome = true;
             }
-
-            const checklistHTML = fixedTasks.map(task => {
-                // Buscamos si ya se hizo esta tarea en la quincena actual
-                const isDone = allTransactions.some(tx => {
-                    const txTime = tx.createdAt?.toMillis ? tx.createdAt.toMillis() : Date.now();
-                    return tx.description === task.description && txTime >= periodStart && txTime <= periodEnd;
-                });
-
-                return `
-                    <div class="flex items-center justify-between p-4 border-b border-gray-100 last:border-0 transition-all ${isDone ? 'bg-gray-50 opacity-75' : 'bg-white'}">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isDone ? 'bg-green-100 text-green-500' : 'bg-blue-50 text-blue-500'}">
-                                <i class="ph ${isDone ? 'ph-check-circle text-xl' : 'ph-calendar-check text-xl'}"></i>
-                            </div>
-                            <div>
-                                <p class="font-bold text-sm md:text-base ${isDone ? 'text-gray-400 line-through' : 'text-gray-800'}">${task.title}</p>
-                                <p class="text-xs ${isDone ? 'text-gray-400' : 'text-gray-500'} font-medium">${formatMoney(task.amount)}</p>
-                            </div>
-                        </div>
-                        ${isDone 
-                            ? `<span class="text-xs font-bold text-green-600 bg-green-100 px-3 py-1.5 rounded-full flex items-center gap-1"><i class="ph ph-check-bold"></i> Listo</span>` 
-                            : `<button onclick="registerQuickAction('${task.id}')" class="text-xs md:text-sm bg-gray-900 hover:bg-black text-white font-bold py-2 px-4 rounded-lg shadow-sm transition-transform active:scale-95 flex items-center gap-1.5">
-                                <i class="ph ph-plus-circle text-lg"></i> Registrar
-                               </button>`
-                        }
-                    </div>
-                `;
-            }).join('');
-            
-            UI.checklistContainer.innerHTML = checklistHTML;
-            UI.fortnightChecklist.classList.remove('hidden');
-        }
-
-        window.registerQuickAction = async function(taskId) {
-            if (!currentUser) return;
-            const task = fixedTasks.find(t => t.id === taskId);
-            if (!task) return;
-
-            try {
-                const transactionsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions');
-                const newDoc = {
-                    type: task.type,
-                    amount: parseFloat(task.amount),
-                    description: task.description,
-                    createdAt: serverTimestamp()
-                };
-                
-                if (task.type === 'transfer') {
-                    newDoc.transferType = task.transferType;
-                } else {
-                    newDoc.category = task.category;
-                    newDoc.account = task.account;
-                }
-                
-                await addDoc(transactionsRef, newDoc);
-                showToast(`¡${task.title} registrado!`);
-            } catch (error) {
-                console.error("Error guardando rápido:", error);
-                showToast("Error al registrar", true);
-            }
-        };
-
-        window.switchView = function(viewName) {
-            // Ocultar todas
-            document.getElementById('view-dashboard').classList.add('hidden');
-            document.getElementById('view-add').classList.add('hidden');
-            document.getElementById('view-simulator').classList.add('hidden');
-            document.getElementById('view-notes').classList.add('hidden');
-            
-            // Mostrar solicitada
-            document.getElementById(`view-${viewName}`).classList.remove('hidden');
-
-            // Actualizar menú desktop
-            const navD_dash = document.getElementById('nav-desktop-dashboard');
-            const navD_add = document.getElementById('nav-desktop-add');
-            const navD_sim = document.getElementById('nav-desktop-simulator');
-            const navD_notes = document.getElementById('nav-desktop-notes');
-            
-            // Resetear todos en desktop
-            const inactiveClass = "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-gray-600 hover:bg-gray-50 font-medium";
-            const activeClass = "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors bg-blue-50 text-blue-600 font-medium";
-
-            navD_dash.className = inactiveClass;
-            navD_add.className = inactiveClass;
-            navD_sim.className = inactiveClass;
-            navD_notes.className = inactiveClass;
-
-            const mDash = document.getElementById('nav-mobile-dashboard');
-            const mSim = document.getElementById('nav-mobile-simulator');
-            const mNotes = document.getElementById('nav-mobile-notes');
-            
-            if(mDash) mDash.classList.replace('text-blue-600', 'text-gray-400');
-            if(mSim) mSim.classList.replace('text-blue-600', 'text-gray-400');
-            if(mNotes) mNotes.classList.replace('text-blue-600', 'text-gray-400');
-            
-            if(viewName === 'dashboard') {
-                navD_dash.className = activeClass;
-                if(mDash) mDash.classList.replace('text-gray-400', 'text-blue-600');
-            } else if (viewName === 'simulator') {
-                navD_sim.className = activeClass;
-                if(mSim) mSim.classList.replace('text-gray-400', 'text-blue-600');
-            } else if (viewName === 'notes') {
-                navD_notes.className = activeClass;
-                if(mNotes) mNotes.classList.replace('text-gray-400', 'text-blue-600');
-            } else {
-                navD_add.className = activeClass;
-            }
-        };
-
-        function showToast(message, isError = false) {
-            UI.toastMsg.textContent = message;
-            UI.toastIcon.className = isError ? "ph ph-x-circle text-red-400 text-xl" : "ph ph-check-circle text-green-400 text-xl";
-            UI.toast.classList.add('show');
-            setTimeout(() => {
-                UI.toast.classList.remove('show');
-            }, 3000);
-        }
-
-        const formatMoney = (amount) => {
-            return new Intl.NumberFormat('es-DO', { style: 'currency', currency: 'DOP' }).format(amount);
-        };
-
-        // --- LÓGICA DEL SIMULADOR DE QUINCENA ---
-        let simItems = [];
-        let currentSimIncome = 0;
-
-        window.setSimIncome = function(amount, btnElement) {
-            currentSimIncome = amount;
-            
-            // Limpiar estilos de ambos botones
-            document.querySelectorAll('.sim-income-btn').forEach(btn => {
-                btn.classList.remove('border-blue-500', 'bg-blue-50');
-                btn.classList.add('border-gray-200');
-            });
-            
-            // Activar botón presionado
-            if(btnElement) {
-                btnElement.classList.remove('border-gray-200');
-                btnElement.classList.add('border-blue-500', 'bg-blue-50');
-            }
-            
-            updateSimulator();
-        };
-        
-        window.updateSimulator = function() {
-            const income = currentSimIncome;
-            
-            let planned = 0;
-            const listEl = document.getElementById('sim-items-list');
-            listEl.innerHTML = '';
-            
-            if (simItems.length === 0) {
-                listEl.innerHTML = '<p class="text-center text-gray-400 py-6 text-sm">No has agregado gastos planeados</p>';
-            } else {
-                simItems.forEach((item, index) => {
-                    planned += item.amount;
-                    listEl.innerHTML += `
-                        <div class="flex justify-between items-center p-4 hover:bg-gray-50 transition-colors">
-                            <div class="flex items-center gap-3 truncate">
-                                <div class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
-                                    <i class="ph ph-shopping-bag text-lg"></i>
-                                </div>
-                                <span class="font-medium text-gray-800 text-sm md:text-base truncate">${item.concept}</span>
-                            </div>
-                            <div class="flex items-center gap-3 md:gap-4 shrink-0">
-                                <span class="font-bold text-red-500 text-sm md:text-base">${formatMoney(item.amount)}</span>
-                                <button onclick="removeSimItem(${index})" class="text-gray-400 hover:text-red-500 transition-colors p-1">
-                                    <i class="ph ph-trash text-lg"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-            
-            const remaining = income - planned;
-            
-            document.getElementById('sim-total-income').textContent = formatMoney(income);
-            document.getElementById('sim-total-planned').textContent = formatMoney(planned);
-            
-            const remainingEl = document.getElementById('sim-remaining');
-            const cardEl = document.getElementById('sim-remaining-card');
-            remainingEl.textContent = formatMoney(remaining);
-            
-            // Colores visuales basados en el presupuesto
-            if (remaining > 0) {
-                remainingEl.className = 'text-sm md:text-lg font-bold text-green-600';
-                cardEl.className = 'bg-green-50 rounded-xl p-3 md:p-4 border border-green-200 text-center shadow-sm transition-colors';
-            } else if (remaining < 0) {
-                remainingEl.className = 'text-sm md:text-lg font-bold text-red-600';
-                cardEl.className = 'bg-red-50 rounded-xl p-3 md:p-4 border border-red-200 text-center shadow-sm transition-colors';
-            } else {
-                remainingEl.className = 'text-sm md:text-lg font-bold text-gray-800';
-                cardEl.className = 'bg-white rounded-xl p-3 md:p-4 border border-gray-200 text-center shadow-sm transition-colors';
-            }
-        };
-
-        window.removeSimItem = function(index) {
-            simItems.splice(index, 1);
-            updateSimulator();
-        };
-
-        document.getElementById('sim-add-form')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const concept = document.getElementById('sim-concept').value;
-            const amount = parseFloat(document.getElementById('sim-amount').value) || 0;
-            if (concept && amount > 0) {
-                simItems.push({ concept, amount });
-                document.getElementById('sim-concept').value = '';
-                document.getElementById('sim-amount').value = '';
-                updateSimulator();
-            }
-        });
-        // --- FIN LÓGICA SIMULADOR ---
-
-        // --- LÓGICA DE NOTAS (AUTOGUARDADO) ---
-        const notepadArea = document.getElementById('notepad-area');
-        const notepadStatus = document.getElementById('notepad-status');
-        let saveTimeout;
-
-        // Cargar nota guardada al iniciar
-        const savedNote = localStorage.getItem('miBilletera_nota');
-        if (savedNote) {
-            notepadArea.value = savedNote;
-        }
-
-        notepadArea.addEventListener('input', () => {
-            notepadStatus.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Guardando...';
-            notepadStatus.classList.remove('text-green-500', 'text-gray-400');
-            notepadStatus.classList.add('text-blue-500');
-            
-            clearTimeout(saveTimeout);
-            
-            // Guardar en el almacenamiento del navegador inmediatamente
-            localStorage.setItem('miBilletera_nota', notepadArea.value);
-            
-            // Efecto visual de guardado exitoso
-            saveTimeout = setTimeout(() => {
-                notepadStatus.innerHTML = '<i class="ph ph-check-circle"></i> Guardado automáticamente';
-                notepadStatus.classList.remove('text-blue-500');
-                notepadStatus.classList.add('text-green-500');
-                
-                setTimeout(() => {
-                    notepadStatus.classList.remove('text-green-500');
-                    notepadStatus.classList.add('text-gray-400');
-                }, 2000);
-            }, 600);
-        });
-        // --- FIN LÓGICA NOTAS ---
-
-        // --- LÓGICA DE EXPORTACIÓN (EXCEL/CSV) ---
-        window.exportToCSV = function() {
-            if (allTransactions.length === 0) {
-                showToast("No hay transacciones para exportar", true);
-                return;
-            }
-
-            const startDate = document.getElementById('export-start').value;
-            const endDate = document.getElementById('export-end').value;
-
-            let filteredTransactions = allTransactions;
-
-            // Filtrar por Fecha de Inicio
-            if (startDate) {
-                // T00:00:00 para asegurar zona horaria local correcta
-                const start = new Date(startDate + 'T00:00:00').getTime();
-                filteredTransactions = filteredTransactions.filter(tx => {
-                    const txTime = tx.createdAt?.toMillis ? tx.createdAt.toMillis() : Date.now();
-                    return txTime >= start;
-                });
-            }
-
-            // Filtrar por Fecha de Fin
-            if (endDate) {
-                const end = new Date(endDate + 'T00:00:00');
-                end.setHours(23, 59, 59, 999);
-                const endTime = end.getTime();
-                filteredTransactions = filteredTransactions.filter(tx => {
-                    const txTime = tx.createdAt?.toMillis ? tx.createdAt.toMillis() : Date.now();
-                    return txTime <= endTime;
-                });
-            }
-
-            if (filteredTransactions.length === 0) {
-                showToast("No hay transacciones en este rango de fechas", true);
-                return;
-            }
-
-            // Construir encabezados del CSV (UTF-8 con BOM para que Excel lea los acentos)
-            let csvContent = "\uFEFF"; 
-            csvContent += "Fecha,Tipo,Categoría / Cuenta,Concepto,Monto\n";
-
-            // Llenar filas
-            filteredTransactions.forEach(tx => {
-                const dateObj = new Date(tx.createdAt?.toMillis ? tx.createdAt.toMillis() : Date.now());
-                const dateStr = dateObj.toLocaleDateString('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                
-                let tipo = "Gasto";
-                if (tx.type === 'income') tipo = "Ingreso";
-                if (tx.type === 'transfer') tipo = "Movimiento Interno";
-                
-                let cat = tx.category || 'N/A';
-                if (tx.type === 'transfer') {
-                    if (tx.transferType === 'save') cat = 'Ahorro guardado';
-                    if (tx.transferType === 'borrow') cat = 'Préstamo de ahorros';
-                    if (tx.transferType === 'repay') cat = 'Pago a mis ahorros';
-                }
-
-                // Escapar comillas en el concepto para evitar romper el CSV
-                const concepto = `"${(tx.description || '').replace(/"/g, '""')}"`;
-                
-                // Formatear el monto (sin formato de moneda, solo el número, para cálculos en Excel)
-                const monto = tx.amount;
-
-                csvContent += `${dateStr},${tipo},${cat},${concepto},${monto}\n`;
-            });
-
-            // Descargar el archivo
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", "historial_finanzas.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            showToast("Historial descargado exitosamente");
-        };
-
-        // 2. Inicialización
-        async function initApp() {
-            if (!firebaseConfig) {
-                UI.loadingScreen.innerHTML = `<div class="text-center p-6"><i class="ph ph-warning text-4xl text-red-500 mb-2"></i><p>Falta configuración de base de datos.</p></div>`;
-                return;
-            }
-
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-
-            // Autenticación obligatoria
-            try {
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Error de Auth:", error);
-                document.getElementById('loading-text').innerHTML = `
-                    <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl max-w-sm text-center">
-                        <span class="text-red-600 font-bold text-sm block mb-2">Autenticación Anónima Desactivada</span>
-                        <span class="text-gray-600 text-xs block">Para solucionar esto:<br>1. Ve a Firebase Console<br>2. Entra a <b>Authentication</b><br>3. Pestaña <b>Sign-in method</b><br>4. Habilita <b>Anónimo (Anonymous)</b> y guarda.</span>
-                    </div>
-                `;
-            }
-
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUser = user;
-                    UI.userIdDisplay.textContent = user.uid;
-                    UI.loadingScreen.classList.add('hidden'); // Quitar pantalla de carga
-                    loadData(); // Iniciar carga de datos
-                }
-            });
-        }
-
-        // 3. Manejo de Datos (Firestore)
-        function loadData() {
-            if (!currentUser) return;
-
-            // Datos de prueba realistas (Mock Data) para mostrar inmediatamente
-            const mockTransactions = [
-                { id: 'm1', type: 'income', amount: 7000, category: 'Salario', description: 'Quincena (Nómina)', account: 'Principal', createdAt: { toMillis: () => Date.now() - 1000 * 60 * 60 * 2 } },
-                { id: 'm2', type: 'transfer', transferType: 'save', amount: 3500, description: 'Transferencia automática a ahorro', createdAt: { toMillis: () => Date.now() - 1000 * 60 * 60 * 24 } },
-                { id: 'm3', type: 'expense', amount: 2150.50, category: 'Comida', description: 'Supermercado Bravo', account: 'Principal', createdAt: { toMillis: () => Date.now() - 1000 * 60 * 60 * 48 } },
-                { id: 'm4', type: 'expense', amount: 450, category: 'Transporte', description: 'Uber al trabajo', account: 'Principal', createdAt: { toMillis: () => Date.now() - 1000 * 60 * 60 * 72 } },
-                { id: 'm5', type: 'transfer', transferType: 'borrow', amount: 1500, description: 'Préstamo para salida / cena', createdAt: { toMillis: () => Date.now() - 1000 * 60 * 60 * 96 } }
-            ];
-
-            // REGLA OBLIGATORIA DE RUTAS DE FIRESTORE
-            const transactionsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions');
-
-            // Suscripción en tiempo real (Sin queries complejas por Regla 2)
-            unsubscribeSnapshot = onSnapshot(transactionsRef, (snapshot) => {
-                allTransactions = [];
-                snapshot.forEach((doc) => {
-                    allTransactions.push({ id: doc.id, ...doc.data() });
-                });
-
-                // Inyectar datos de prueba si la base de datos está vacía
-                if (allTransactions.length === 0) {
-                    allTransactions = [...mockTransactions];
-                }
-
-                // Ordenar por fecha de creación en memoria (más recientes primero)
-                allTransactions.sort((a, b) => {
-                    const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-                    const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
-                    return timeB - timeA; 
-                });
-
-                updateDashboard();
-            }, (error) => {
-                console.error("Error obteniendo datos: ", error);
-                showToast("Error al sincronizar datos", true);
-            });
-        }
-
-        // 4. Actualización del UI y Gráficas
-        function updateDashboard() {
-            let totalIn = 0;
-            let totalOut = 0;
-            
-            let balPrincipal = 0;
-            let balAhorro = 0;
-            let debt = 0;
-            
-            const expensesByCategory = {};
-
-            UI.transactionsList.innerHTML = '';
-
-            if (allTransactions.length === 0) {
-                UI.transactionsList.innerHTML = `<p class="text-center text-gray-400 py-4">No tienes transacciones aún. ¡Agrega una!</p>`;
-            }
-
-            allTransactions.forEach(tx => {
-                // Cálculos
-                const amount = parseFloat(tx.amount) || 0;
-                
-                // Distribución en cuentas
-                if (tx.type === 'income') {
-                    totalIn += amount;
-                    if (tx.account === 'Ahorro') balAhorro += amount;
-                    else balPrincipal += amount;
-                } else if (tx.type === 'expense') {
-                    totalOut += amount;
-                    if (tx.account === 'Ahorro') balAhorro -= amount;
-                    else balPrincipal -= amount;
-                    
-                    // Agrupar para gráfica solo gastos reales
-                    const cat = tx.category || 'Otros';
-                    expensesByCategory[cat] = (expensesByCategory[cat] || 0) + amount;
-                } else if (tx.type === 'transfer') {
-                    if (tx.transferType === 'save') {
-                        balPrincipal -= amount;
-                        balAhorro += amount;
-                    } else if (tx.transferType === 'borrow') {
-                        balPrincipal += amount;
-                        balAhorro -= amount;
-                        debt += amount; // Aumento mi deuda
-                    } else if (tx.transferType === 'repay') {
-                        balPrincipal -= amount;
-                        balAhorro += amount;
-                        debt -= amount; // Reduzco mi deuda
-                    }
-                }
-
-                // Render Lista (Estilo Netbanking)
-                const isInc = tx.type === 'income';
-                const isTrans = tx.type === 'transfer';
-                
-                let iconName = 'list';
-                let colorHex = '#9CA3AF';
-                let displayCat = tx.category || 'Otros';
-                let displaySign = isInc ? '+' : '-';
-                let amountColor = isInc ? 'text-green-600' : 'text-gray-800';
-                let bgIconColor = isInc ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600';
-                
-                if (isTrans) {
-                    iconName = 'arrows-left-right';
-                    colorHex = '#3B82F6'; 
-                    amountColor = 'text-blue-600';
-                    displaySign = ''; // Neutro en lista
-                    bgIconColor = 'bg-blue-100 text-blue-600';
-                    if (tx.transferType === 'save') displayCat = 'Ahorro guardado';
-                    if (tx.transferType === 'borrow') displayCat = 'Préstamo de ahorros';
-                    if (tx.transferType === 'repay') displayCat = 'Pago a mis ahorros';
-                } else {
-                    iconName = categoryIcons[tx.category] || 'list';
-                    colorHex = categoryColors[tx.category] || '#9CA3AF';
-                    if (!isInc) {
-                        bgIconColor = 'bg-red-50 text-red-500';
-                        amountColor = 'text-red-600';
-                    }
-                }
-                
-                // Formatear Fecha (Ej. 23 Nov 2026)
-                const dateObj = new Date(tx.createdAt?.toMillis ? tx.createdAt.toMillis() : Date.now());
-                const dateStr = dateObj.toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '');
-                
-                const item = document.createElement('div');
-                item.className = "flex flex-col md:grid md:grid-cols-12 gap-1 md:gap-4 items-start md:items-center p-4 md:px-4 md:py-3 hover:bg-gray-50 transition-colors cursor-pointer group";
-                item.innerHTML = `
-                    <!-- Fecha (Mobile: Arriba, Desktop: Columna 1) -->
-                    <div class="w-full md:col-span-2 flex justify-between md:block mb-2 md:mb-0 order-1">
-                        <div class="text-xs font-semibold text-gray-400 md:text-sm uppercase md:capitalize">${dateStr}</div>
-                        <!-- Monto en mobile (se oculta en desktop) -->
-                        <div class="md:hidden font-bold ${amountColor} text-sm">
-                            ${displaySign}${formatMoney(amount)}
-                        </div>
-                    </div>
-                    
-                    <!-- Concepto e Ícono (Columna 2) -->
-                    <div class="w-full md:col-span-5 flex items-center gap-3 order-2">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${bgIconColor}">
-                            <i class="ph ph-${isInc ? 'trend-up' : (isTrans ? 'arrows-left-right' : iconName)} text-lg"></i>
-                        </div>
-                        <div class="flex-1 truncate">
-                            <p class="font-bold text-gray-800 text-sm md:text-base truncate group-hover:text-blue-600 transition-colors">${tx.description || displayCat}</p>
-                            <!-- Categoría en mobile (debajo del concepto) -->
-                            <p class="md:hidden text-xs text-gray-500 mt-0.5">${displayCat}</p>
-                        </div>
-                    </div>
-
-                    <!-- Categoría (Desktop: Columna 3) -->
-                    <div class="hidden md:block md:col-span-2 order-3 text-sm text-gray-500 truncate">
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
-                            ${displayCat}
-                        </span>
-                    </div>
-
-                    <!-- Monto (Desktop: Columna 4) -->
-                    <div class="hidden md:block md:col-span-3 text-right order-4">
-                        <p class="font-bold ${amountColor} text-base group-hover:scale-105 transition-transform origin-right">
-                            ${displaySign}${formatMoney(amount)}
-                        </p>
-                    </div>
-                `;
-                UI.transactionsList.appendChild(item);
-            });
-
-            // Actualizar Totales Cuentas
-            UI.balPrincipal.textContent = formatMoney(balPrincipal);
-            UI.balAhorro.textContent = formatMoney(balAhorro);
-            UI.balDeuda.textContent = formatMoney(debt);
-
-            // Actualizar Totales Flujo
-            const balance = totalIn - totalOut;
-            UI.totalBalance.textContent = formatMoney(balance);
-            UI.totalIncome.textContent = formatMoney(totalIn);
-            UI.totalExpense.textContent = formatMoney(totalOut);
-
-            // Actualizar Gráfica
-            renderChart(expensesByCategory);
-            
-            // Actualizar Checklist Inteligente
-            updateChecklist();
-        }
-
-        function renderChart(dataObj) {
-            const ctx = document.getElementById('expensesChart').getContext('2d');
-            const noDataEl = document.getElementById('no-chart-data');
-            
-            const labels = Object.keys(dataObj);
-            const data = Object.values(dataObj);
-
-            if (data.length === 0) {
-                noDataEl.classList.remove('hidden');
-                if (chartInstance) chartInstance.destroy();
-                return;
-            } else {
-                noDataEl.classList.add('hidden');
-            }
-
-            const bgColors = labels.map(label => categoryColors[label] || '#9CA3AF');
-
-            if (chartInstance) {
-                chartInstance.destroy(); // Evitar superposición
-            }
-
-            chartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: bgColors,
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 20,
-                                font: { family: 'Inter', size: 12 }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // 5. Guardar Nuevo Registro
-        document.getElementById('add-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentUser) return;
-
-            const btn = document.getElementById('submit-btn');
-            btn.disabled = true;
-            btn.innerHTML = `<i class="ph ph-spinner animate-spin text-xl"></i> Guardando...`;
-
-            const type = document.querySelector('input[name="type"]:checked').value;
-            const amount = document.getElementById('amount').value;
-            const description = document.getElementById('description').value;
-            
-            // Valores que dependen del tipo
-            const category = document.getElementById('category').value;
-            const account = document.getElementById('account-source').value;
-            const transferType = document.getElementById('transfer-type').value;
-
-            try {
-                const transactionsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions');
-                
-                // Construir objeto base
-                const newDoc = {
-                    type,
-                    amount: parseFloat(amount),
-                    description,
-                    createdAt: serverTimestamp()
-                };
-                
-                // Añadir campos específicos
-                if (type === 'transfer') {
-                    newDoc.transferType = transferType;
-                } else {
-                    newDoc.category = category;
-                    newDoc.account = account;
-                }
-                
-                await addDoc(transactionsRef, newDoc);
-
-                // Limpiar form
-                document.getElementById('amount').value = '';
-                document.getElementById('description').value = '';
-                
-                showToast("Registro guardado con éxito");
-                
-                // Volver al dashboard automáticamente en móviles
-                switchView('dashboard');
-                
-            } catch (error) {
-                console.error("Error guardando:", error);
-                showToast("Error al guardar", true);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = `<i class="ph ph-floppy-disk text-xl"></i> Guardar Registro`;
-            }
+          } else {
+            principal -= amt;
+            if (data.category === 'Ahorro') ahorro += amt;
+          }
         });
 
-        // Cambiar vista del formulario según el tipo seleccionado
-        const typeRadios = document.querySelectorAll('input[name="type"]');
-        const catSelect = document.getElementById('category');
-        const catGroup = catSelect.parentElement.parentElement; // div mb-6
-        const accountGroup = document.getElementById('account-selector-group');
-        const transferGroup = document.getElementById('transfer-selector-group');
+        document.getElementById('balance-principal').textContent = `$${principal.toLocaleString()}`;
+        document.getElementById('balance-ahorro').textContent = `$${ahorro.toLocaleString()}`;
+        document.getElementById('quick-diezmo-amount').textContent = `$${Math.round(lastIncomeAmount * 0.10).toLocaleString()}`;
 
-        typeRadios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                const val = e.target.value;
-                if(val === 'income') {
-                    catSelect.value = 'Salario';
-                    catGroup.classList.remove('hidden');
-                    accountGroup.classList.remove('hidden');
-                    transferGroup.classList.add('hidden');
-                } else if(val === 'expense') {
-                    catSelect.value = 'Comida';
-                    catGroup.classList.remove('hidden');
-                    accountGroup.classList.remove('hidden');
-                    transferGroup.classList.add('hidden');
-                } else if(val === 'transfer') {
-                    catGroup.classList.add('hidden');
-                    accountGroup.classList.add('hidden');
-                    transferGroup.classList.remove('hidden');
-                }
-            });
+        renderTransactions();
+      });
+    }
+
+    function renderTransactions() {
+      const list = document.getElementById('transactions-list');
+      if (allTransactions.length === 0) {
+        list.innerHTML = `<p class="p-6 text-center text-sm text-gray-400">Aún no hay movimientos. Ve a "Registro" para agregar el primero.</p>`;
+        return;
+      }
+
+      list.innerHTML = allTransactions.map(t => `
+        <div class="flex justify-between items-center p-4 hover:bg-gray-50 transition-colors">
+          <div>
+            <p class="font-semibold text-sm text-gray-800">${t.concept}</p>
+            <p class="text-xs text-gray-400">${t.date} • ${t.category}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-sm ${t.type === 'ingreso' ? 'text-emerald-600' : 'text-red-500'}">
+              ${t.type === 'ingreso' ? '+' : '-'}$${Number(t.amount).toLocaleString()}
+            </span>
+            <button data-delete="${t.id}" class="delete-btn text-gray-300 hover:text-red-500 transition-colors p-1">
+              <i class="fas fa-trash-alt text-xs"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (confirm('¿Eliminar este movimiento?')) {
+            await deleteDoc(doc(db, "nomi_transactions", btn.dataset.delete));
+            showToast('Movimiento eliminado');
+          }
         });
+      });
+    }
 
-        // Arrancar
-        window.addEventListener('DOMContentLoaded', initApp);
+    // Guardar nuevo movimiento
+    document.getElementById('transaction-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const type = document.querySelector('input[name="type"]:checked').value;
+      const amount = parseFloat(document.getElementById('input-amount').value);
+      const concept = document.getElementById('input-concept').value.trim();
+      const category = document.getElementById('input-category').value;
+      const date = document.getElementById('input-date').value;
 
-    </script>
+      await addDoc(collection(db, "nomi_transactions"), { type, amount, concept, category, date, createdAt: Date.now() });
+      e.target.reset();
+      document.getElementById('input-date').valueAsDate = new Date();
+      showToast('Movimiento guardado');
+      switchTab('dashboard');
+    });
+
+    // Botones rápidos de quincena
+    document.getElementById('fill-q15').addEventListener('click', () => {
+      document.querySelector('input[name="type"][value="ingreso"]').checked = true;
+      document.getElementById('input-amount').value = 34580;
+      document.getElementById('input-concept').value = 'Quincena del 15';
+      document.getElementById('input-category').value = 'Sueldo';
+    });
+
+    document.getElementById('fill-q30').addEventListener('click', () => {
+      document.querySelector('input[name="type"][value="ingreso"]').checked = true;
+      document.getElementById('input-amount').value = 27663;
+      document.getElementById('input-concept').value = 'Quincena del 30';
+      document.getElementById('input-category').value = 'Sueldo';
+    });
+
+    // Acciones rápidas en Dashboard
+    document.getElementById('quick-ahorro').addEventListener('click', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      await addDoc(collection(db, "nomi_transactions"), {
+        type: 'gasto', amount: 7000, concept: 'Ahorro Quincenal', category: 'Ahorro', date: today, createdAt: Date.now()
+      });
+      showToast('Ahorro de $7,000 registrado');
+    });
+
+    document.getElementById('quick-diezmo').addEventListener('click', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const amt = Math.round(lastIncomeAmount * 0.10);
+      await addDoc(collection(db, "nomi_transactions"), {
+        type: 'gasto', amount: amt, concept: 'Diezmo (10%)', category: 'Diezmo', date: today, createdAt: Date.now()
+      });
+      showToast(`Diezmo de $${amt.toLocaleString()} registrado`);
+    });
+
+    // Exportar CSV
+    document.getElementById('btn-export').addEventListener('click', () => {
+      if (allTransactions.length === 0) return showToast('No hay datos para exportar');
+      const headers = ['Fecha', 'Tipo', 'Categoria', 'Concepto', 'Monto'];
+      const rows = allTransactions.map(t => [t.date, t.type, t.category, `"${t.concept}"`, t.amount]);
+      const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Nomi_Finanzas_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+    });
+
+    // Simulador
+    function updateSimulator() {
+      const diezmo = Math.round(simIncome * 0.10);
+      const ahorro = 7000;
+      const fijos = Number(document.getElementById('range-fijos').value);
+      const comida = Number(document.getElementById('range-comida').value);
+      const extras = Number(document.getElementById('range-extras').value);
+
+      document.getElementById('sim-diezmo').textContent = `$${diezmo.toLocaleString()}`;
+      document.getElementById('val-fijos').textContent = `$${fijos.toLocaleString()}`;
+      document.getElementById('val-comida').textContent = `$${comida.toLocaleString()}`;
+      document.getElementById('val-extras').textContent = `$${extras.toLocaleString()}`;
+
+      const libre = simIncome - diezmo - ahorro - fijos - comida - extras;
+      const libreEl = document.getElementById('sim-libre');
+      libreEl.textContent = `$${libre.toLocaleString()}`;
+      libreEl.className = `text-3xl font-bold mt-1 ${libre >= 0 ? 'text-emerald-600' : 'text-red-500'}`;
+    }
+
+    document.getElementById('sim-q15').addEventListener('click', (e) => {
+      simIncome = 34580;
+      e.target.className = 'flex-1 py-2 px-3 rounded-xl bg-blue-600 text-white text-sm font-semibold';
+      document.getElementById('sim-q30').className = 'flex-1 py-2 px-3 rounded-xl bg-gray-100 text-gray-700 text-sm font-semibold';
+      updateSimulator();
+    });
+
+    document.getElementById('sim-q30').addEventListener('click', (e) => {
+      simIncome = 27663;
+      e.target.className = 'flex-1 py-2 px-3 rounded-xl bg-blue-600 text-white text-sm font-semibold';
+      document.getElementById('sim-q15').className = 'flex-1 py-2 px-3 rounded-xl bg-gray-100 text-gray-700 text-sm font-semibold';
+      updateSimulator();
+    });
+
+    ['range-fijos', 'range-comida', 'range-extras'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateSimulator);
+    });
+
+    // Notas
+    async function loadNotes() {
+      const snap = await getDoc(doc(db, "nomi_notes", "main"));
+      if (snap.exists()) document.getElementById('notes-area').value = snap.data().text || '';
+    }
+
+    document.getElementById('btn-save-notes').addEventListener('click', async () => {
+      const text = document.getElementById('notes-area').value;
+      await setDoc(doc(db, "nomi_notes", "main"), { text, updatedAt: Date.now() });
+      showToast('Notas guardadas en la nube');
+    });
+  </script>
 </body>
 </html>
